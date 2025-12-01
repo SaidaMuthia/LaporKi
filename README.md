@@ -1,16 +1,15 @@
-# laporki
+# 📱 **LaporKi’ – Aplikasi Mobile Aduan Masyarakat Makassar**
 
-A new Flutter project.
+**“Suara Ta’ Didengar, Masalah Ta’ Ditindak”**
 
-## Getting Started
+LaporKi’ adalah aplikasi mobile berbasis Flutter yang dirancang untuk mempermudah masyarakat Kota Makassar dalam melaporkan berbagai permasalahan lingkungan dan fasilitas publik secara cepat, terstruktur, dan transparan. Aplikasi ini mendukung konsep *smart city* dengan menyediakan alur pelaporan yang jelas antara masyarakat dan pihak berwenang.
 
-This project is a starting point for a Flutter application.
+---
 
-A few resources to get you started if this is your first Flutter project:
+## 👨‍🎓 **Tim Pengembang**
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+| Nama                          | NIM        |
+| ----------------------------- | ---------- |
+| Saida Muthia Khadijah         | D121231024 |
+| Rebel Leony Dy Agustia Djokja | D121231039 |
+| Devi Permata Sari Lam         | D121231060 |
