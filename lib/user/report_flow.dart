@@ -7,28 +7,78 @@ class LocationPermissionPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(leading: const BackButton()),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, size: 20),
+          onPressed: () {},
+        ),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.location_on, size: 100, color: Color(0xFF005AC2)),
-            const SizedBox(height: 30),
-            const Text("Aktifkan Layanan Lokasi", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
-            const SizedBox(height: 15),
-            const Text("Kami memerlukan izin lokasi agar titik laporan akurat.", textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
+            const Spacer(),
+            const Text(
+              "Aktifkan Layanan\nLokasi",
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 40),
+            // Ilustrasi Icon Lokasi
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.blue.shade50,
+              ),
+              child: const Icon(
+                Icons.location_on,
+                size: 60,
+                color: Color(0xFF0055D4),
+              ),
+            ),
+            const SizedBox(height: 40),
+            const Text(
+              "Kami memerlukan izin lokasi agar Anda dapat menentukan titik pengaduan dengan lebih akurat.",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey, fontSize: 14, height: 1.5),
+            ),
+            const Spacer(),
             SizedBox(
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CameraPage())),
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF005AC2), foregroundColor: Colors.white),
+                onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const CameraPage()));
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0055D4),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
                 child: const Text("Izinkan Akses Lokasi"),
               ),
             ),
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Jangan Izinkan")),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: OutlinedButton(
+                onPressed: () {},
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Color(0xFF0055D4)),
+                  foregroundColor: const Color(0xFF0055D4),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text("Jangan Izinkan"),
+              ),
+            ),
+            const SizedBox(height: 20),
           ],
         ),
       ),
@@ -46,18 +96,96 @@ class CameraPage extends StatelessWidget {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          const Center(child: Text("Camera Preview Here", style: TextStyle(color: Colors.white))),
+          // Placeholder Kamera (Background)
+          Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                // Menggunakan placeholder gambar jalan rusak dari contoh
+                image: NetworkImage("https://via.placeholder.com/400x800"), 
+                fit: BoxFit.cover,
+                opacity: 0.6,
+              ),
+            ),
+            child: const Center(child: Text("Camera Preview", style: TextStyle(color: Colors.white))),
+          ),
+          
+          // Header
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white, size: 28),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  const Text(
+                    "Ambil Gambar",
+                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.flash_off, color: Colors.white, size: 28),
+                    onPressed: () {},
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Footer Controls
           Positioned(
             bottom: 40,
             left: 0,
             right: 0,
-            child: Center(
-              child: GestureDetector(
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReviewImagePage())),
-                child: Container(width: 80, height: 80, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white, border: Border.all(color: Colors.grey, width: 4))),
-              ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                // Gallery Thumbnail
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    color: Colors.grey.shade800,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                  child: const Icon(Icons.image, color: Colors.white),
+                ),
+                
+                // Shutter Button
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const ReviewImagePage()));
+                  },
+                  child: Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 4),
+                      color: Colors.transparent,
+                    ),
+                    child: Container(
+                      margin: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+                
+                // Switch Camera
+                IconButton(
+                  icon: const Icon(Icons.flip_camera_ios, color: Colors.white, size: 30),
+                  onPressed: () {},
+                ),
+              ],
             ),
-          )
+          ),
         ],
       ),
     );
@@ -72,19 +200,80 @@ class ReviewImagePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(child: Container(color: Colors.grey, child: const Center(child: Icon(Icons.image, size: 100, color: Colors.white)))),
-          Padding(
-            padding: const EdgeInsets.all(20),
+          // Gambar Full Screen
+          Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: NetworkImage("https://via.placeholder.com/400x800"), // Ganti dengan path file asli nanti
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          
+          // Header Overlay
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white, size: 28),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  const Expanded(
+                    child: Text(
+                      "Tinjau Gambar",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  const SizedBox(width: 48), // Balancing space
+                ],
+              ),
+            ),
+          ),
+
+          // Bottom Buttons
+          Positioned(
+            bottom: 40,
+            left: 20,
+            right: 20,
             child: Row(
               children: [
-                Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(context), child: const Text("Ulangi"))),
-                const SizedBox(width: 10),
-                Expanded(child: ElevatedButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SetLocationPage())), child: const Text("Gunakan"))),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    child: const Text("Ulangi", style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const SetLocationPage()));
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0055D4),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    child: const Text("Gunakan", style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
               ],
             ),
-          )
+          ),
         ],
       ),
     );
@@ -98,16 +287,67 @@ class SetLocationPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Atur Lokasi")),
+      appBar: AppBar(
+        title: const Text("Atur Lokasi Laporan"),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
       body: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(padding: const EdgeInsets.all(15), decoration: BoxDecoration(border: Border.all(color: Colors.grey)), child: const Row(children: [Icon(Icons.map), SizedBox(width: 10), Text("Pilih di Peta")])),
+            const Text("Lokasi Laporan", style: TextStyle(fontWeight: FontWeight.w500)),
+            const SizedBox(height: 8),
+            InkWell(
+              onTap: () {}, // Buka Peta
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: const [
+                    Icon(Icons.location_on_outlined, color: Color(0xFF0055D4)),
+                    SizedBox(width: 10),
+                    Text("Pilih lokasi", style: TextStyle(color: Colors.grey)),
+                  ],
+                ),
+              ),
+            ),
             const SizedBox(height: 20),
-            TextFormField(maxLines: 3, decoration: const InputDecoration(labelText: "Detail Patokan", border: OutlineInputBorder())),
+            
+            const Text("Detail Tambahan Lokasi", style: TextStyle(fontWeight: FontWeight.w500)),
+            const Text("(Nama gedung, patokan, keadaan sekitar, dll.)", style: TextStyle(fontSize: 12, color: Colors.grey)),
+            const SizedBox(height: 8),
+            TextField(
+              maxLines: 4,
+              decoration: const InputDecoration(
+                hintText: "Contoh: Trotoar di depan Balai Kota",
+                hintStyle: TextStyle(color: Colors.grey),
+              ),
+            ),
+            
             const Spacer(),
-            SizedBox(width: double.infinity, height: 50, child: ElevatedButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SetDetailsPage())), child: const Text("Selanjutnya"))),
+            
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const SetDetailsPage()));
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0055D4),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                child: const Text("Selanjutnya"),
+              ),
+            ),
           ],
         ),
       ),
@@ -122,16 +362,72 @@ class SetDetailsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Detail Laporan")),
+      appBar: AppBar(
+        title: const Text("Atur Detail Laporan"),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TextFormField(maxLines: 5, decoration: const InputDecoration(labelText: "Deskripsi Masalah", hintText: "Jelaskan kerusakan...", border: OutlineInputBorder())),
+            const Text("Deskripsi Laporan", style: TextStyle(fontWeight: FontWeight.w500)),
+            const Text("Kamu bisa tulis deskripsi masalah, waktu kejadian, dan detail lain yang diperlukan.", 
+              style: TextStyle(fontSize: 12, color: Colors.grey)),
+            const SizedBox(height: 8),
+            TextField(
+              maxLines: 4,
+              decoration: const InputDecoration(
+                hintText: "Ketik dengan detail, jelas, dan padat...",
+                hintStyle: TextStyle(color: Colors.grey),
+              ),
+            ),
             const SizedBox(height: 20),
-            DropdownButtonFormField(items: const [DropdownMenuItem(value: "Infrastruktur", child: Text("Infrastruktur"))], onChanged: (v){}, decoration: const InputDecoration(labelText: "Kategori", border: OutlineInputBorder())),
-            const SizedBox(height: 30),
-            SizedBox(width: double.infinity, height: 50, child: ElevatedButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReviewReportPage())), child: const Text("Tinjau Laporan"))),
+
+            const Text("Kategori Laporan", style: TextStyle(fontWeight: FontWeight.w500)),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              decoration: const InputDecoration(),
+              hint: const Text("Pilih kategori"),
+              items: const [
+                DropdownMenuItem(value: "Infrastruktur", child: Text("Infrastruktur")),
+                DropdownMenuItem(value: "Kebersihan", child: Text("Kebersihan")),
+              ],
+              onChanged: (val) {},
+            ),
+            const SizedBox(height: 20),
+
+            const Text("Jenis Laporan", style: TextStyle(fontWeight: FontWeight.w500)),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              decoration: const InputDecoration(),
+              hint: const Text("Pilih jenis"),
+              items: const [
+                DropdownMenuItem(value: "Publik", child: Text("Publik")),
+                DropdownMenuItem(value: "Privat", child: Text("Privat")),
+              ],
+              onChanged: (val) {},
+            ),
+            const SizedBox(height: 40),
+
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ReviewReportPage()));
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0055D4),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                child: const Text("Selanjutnya"),
+              ),
+            ),
           ],
         ),
       ),
@@ -146,29 +442,94 @@ class ReviewReportPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Tinjau Laporan")),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
+      appBar: AppBar(
+        title: const Text("Tinjau Laporan"),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const ListTile(title: Text("Lokasi"), subtitle: Text("Jl. Malino, Gowa")),
-            const ListTile(title: Text("Kategori"), subtitle: Text("Infrastruktur")),
-            const ListTile(title: Text("Deskripsi"), subtitle: Text("Jalan berlubang...")),
-            const Spacer(),
+            // Thumbnail Gambar
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                "https://via.placeholder.com/600x300", // Ganti dengan image path
+                width: double.infinity,
+                height: 180,
+                fit: BoxFit.cover,
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Item-item Review
+            _buildReviewItem("Lokasi Laporan", "Jl. Malino No.Km.6, Romang Lompoa, Kec. Bontomarannu, Kabupaten Gowa, Sulawesi Selatan 92171, Indonesia"),
+            _buildReviewItem("Detail Lokasi Laporan", "Trotoar di depan Balai Kota"),
+            _buildReviewItem("Deskripsi Laporan", "Jalan berlubang cukup dalam di depan Toko Sinar Jaya, menyebabkan kendaraan sering melambat dan hampir terjadi kecelakaan. Mohon segera dilakukan perbaikan sebelum menimbulkan bahaya lebih besar."),
+            _buildReviewItem("Kategori Laporan", "Infrastruktur"),
+            _buildReviewItem("Jenis Laporan", "Privat"),
+
+            const SizedBox(height: 20),
+            
+            // Tombol Kirim (Opsional, karena di screenshot terpotong tapi biasanya ada)
             SizedBox(
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
                 onPressed: () {
-                  // Kembali ke Dashboard
-                  Navigator.pushNamedAndRemoveUntil(context, '/dashboard', (route) => false);
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Laporan Berhasil Dikirim!")));
+                  // Aksi Kirim Data
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Laporan Terkirim!")));
                 },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0055D4),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
                 child: const Text("Kirim Laporan"),
               ),
             ),
+            const SizedBox(height: 20),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildReviewItem(String title, String content) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: const TextStyle(fontSize: 14, color: Colors.black54)),
+          const SizedBox(height: 4),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade200),
+              borderRadius: BorderRadius.circular(8),
+              color: Colors.white,
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    content,
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500, height: 1.4),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Icon(Icons.edit, size: 18, color: Color(0xFF0055D4)),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
