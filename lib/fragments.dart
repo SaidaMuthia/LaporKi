@@ -181,7 +181,7 @@ class NotificationFragment extends StatelessWidget {
       appBar: AppBar(title: const Text("Notifikasi")),
       body: ListView.separated(
         itemCount: 5,
-        separatorBuilder: (_, __) => const Divider(height: 1),
+        separatorBuilder: (_, _) => const Divider(height: 1),
         itemBuilder: (ctx, i) {
           return ListTile(
             tileColor: i == 0 ? Colors.blue[50] : Colors.white, // Highlight unread
