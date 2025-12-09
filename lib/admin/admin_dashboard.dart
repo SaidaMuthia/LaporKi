@@ -13,7 +13,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   // Daftar Halaman untuk Admin
   final List<Widget> _pages = [
-    const HomeAdminFragment(),      // Index 0: Beranda Admin (Beda konten)
+    const AdminHomePage(),      // Index 0: Beranda Admin (Beda konten)
     const LaporanAdminFragment(),   // Index 1: Manajemen Laporan (Beda konten)
     const NotificationFragment(),   // Index 2: Notifikasi (Sama persis dgn User)
     const AccountFragment(),        // Index 3: Akun (Sama persis dgn User)

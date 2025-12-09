@@ -1,176 +1,165 @@
 import 'package:flutter/material.dart';
+import 'package:laporki/admin/laporan_admin_page.dart';
+import 'package:laporki/admin/laporan_model.dart';
 
 // --- HOME ADMIN FRAGMENT (Berbeda dari User) ---
-class HomeAdminFragment extends StatelessWidget {
-  const HomeAdminFragment({super.key});
+// --- 2. ADMIN HOME PAGE (KONTEN BERANDA) ---
+
+class AdminHomePage extends StatelessWidget {
+  const AdminHomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return CustomScrollView(
-      slivers: [
-        // 1. AppBar Admin
-        SliverAppBar(
-          pinned: true,
-          toolbarHeight: 80,
-          backgroundColor: Colors.white,
-          elevation: 0,
-          automaticallyImplyLeading: false, // Hapus panah back
-          title: const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text("Selamat Bekerja,", style: TextStyle(color: Colors.grey, fontSize: 16)),
-              Text("Admin Kota!", style: TextStyle(color: Colors.black, fontSize: 24, fontWeight: FontWeight.bold)),
-            ],
+    // Ambil 4 laporan terbaru untuk tampilan beranda
+    final List<Laporan> latestLaporan = laporanList.take(4).toList(); 
+    
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          const SizedBox(height: 20), 
+          
+          // Ringkasan Laporan Hari Ini (SummaryCard)
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.0),
+            child: SummaryCard(),
           ),
-          actions: [
-            Padding(
-              padding: const EdgeInsets.only(right: 20.0),
-              child: CircleAvatar(
-                backgroundColor: Colors.blue[50],
-                child: const Icon(Icons.admin_panel_settings, color: Color(0xFF005AC2)),
+          
+          const SizedBox(height: 25),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.0),
+            child: Text(
+              'Laporan Terbaru',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
               ),
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 15),
+          
+          // Daftar Laporan
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: latestLaporan.length,
+            itemBuilder: (context, index) {
+              return LaporanListItem(laporan: latestLaporan[index]);
+            },
+          ),
+          const SizedBox(height: 80),
+        ],
+      ),
+    );
+  }
+}
 
-        // 2. Konten Dashboard Admin
-        SliverList(
-          delegate: SliverChildListDelegate(
-            [
-              Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Kartu Statistik Besar
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF005AC2), Color(0xFF007AD9)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: const [
-                                Text("Total Laporan Masuk", style: TextStyle(color: Colors.white70, fontSize: 14)),
-                                SizedBox(height: 5),
-                                Text("1,250", style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
-                                SizedBox(height: 5),
-                                Text("+12 hari ini", style: TextStyle(color: Colors.white70, fontSize: 12)),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(10)),
-                            child: const Icon(Icons.bar_chart, color: Colors.white, size: 40),
-                          )
-                        ],
-                      ),
-                    ),
+// --- 3. KOMPONEN LAINNYA (SummaryCard, LaporanListItem, CustomBottomNavBar) ---
 
-                    const SizedBox(height: 25),
-                    const Text("Tinjauan Cepat", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 15),
+class SummaryCard extends StatelessWidget {
+  const SummaryCard({super.key});
 
-                    // Grid Status (Khusus Admin: Perlu Verifikasi, dll)
-                    Row(
-                      children: [
-                        _buildAdminStatCard("Perlu Verifikasi", "15", Colors.orange.shade50, Colors.orange, Icons.warning_amber_rounded),
-                        const SizedBox(width: 10),
-                        _buildAdminStatCard("Sedang Diproses", "42", Colors.blue.shade50, Colors.blue, Icons.engineering),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        _buildAdminStatCard("Selesai Bulan Ini", "128", Colors.green.shade50, Colors.green, Icons.task_alt),
-                        const SizedBox(width: 10),
-                        _buildAdminStatCard("Ditolak/Spam", "5", Colors.red.shade50, Colors.red, Icons.delete_outline),
-                      ],
-                    ),
-
-                    const SizedBox(height: 25),
-                    const Text("Laporan Terbaru Masuk", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 15),
-                    
-                    // List Singkat Laporan Baru
-                    _buildIncomingReportItem("Jalan Berlubang di Jl. Sudirman", "Infrastruktur", "Baru saja"),
-                    _buildIncomingReportItem("Lampu Merah Mati Simpang 5", "Dishub", "10 menit lalu"),
-                    _buildIncomingReportItem("Sampah Liar di Bantaran Kali", "Lingkungan", "1 jam lalu"),
-                    
-                    const SizedBox(height: 80), // Padding bawah agar tidak ketutup navbar
-                  ],
+  @override
+  Widget build(BuildContext context) {
+    final primaryColor = Theme.of(context).primaryColor;
+    return Container(
+      padding: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        color: primaryColor,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: primaryColor.withOpacity(0.3),
+            spreadRadius: 2,
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: const Column(
+        children: <Widget>[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Icon(Icons.description, color: Colors.white, size: 28),
+              SizedBox(width: 8),
+              Text(
+                'Rangkuman Laporan Hari Ini',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ],
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAdminStatCard(String title, String count, Color bg, Color color, IconData icon) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(15),
-        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: color, size: 28),
-            const SizedBox(height: 10),
-            Text(count, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87)),
-            Text(title, style: TextStyle(fontSize: 12, color: Colors.grey[700])),
-          ],
-        ),
+          SizedBox(height: 20),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: SummaryItem(
+                  count: 1, // Ganti dengan logika penghitungan data riil
+                  label: 'Laporan Baru',
+                  iconColor: Color(0xFFFFCC00), 
+                ),
+              ),
+              SizedBox(width: 15),
+              Expanded(
+                child: SummaryItem(
+                  count: 1, // Ganti dengan logika penghitungan data riil
+                  label: 'Laporan Diproses',
+                  iconColor: Color(0xFFFF9500), 
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
+}
 
-  Widget _buildIncomingReportItem(String title, String cat, String time) {
+class SummaryItem extends StatelessWidget {
+  final int count;
+  final String label;
+  final Color iconColor; // Hapus properti 'color' yang tidak terpakai
+
+  const SummaryItem({
+    super.key,
+    required this.count,
+    required this.label,
+    required this.iconColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(vertical: 20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey.shade200),
+        borderRadius: BorderRadius.circular(15),
       ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(8)),
-            child: const Icon(Icons.report_problem_outlined, color: Colors.red),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Text(cat, style: const TextStyle(fontSize: 12, color: Colors.blue)),
-                    const SizedBox(width: 8),
-                    const Icon(Icons.access_time, size: 10, color: Colors.grey),
-                    const SizedBox(width: 4),
-                    Text(time, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                  ],
-                )
-              ],
+      child: Column(
+        children: <Widget>[
+          Text(
+            '$count',
+            style: TextStyle(
+              fontSize: 36,
+              fontWeight: FontWeight.bold,
+              color: iconColor,
             ),
           ),
-          const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
+          const SizedBox(height: 5),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade700,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ],
       ),
     );

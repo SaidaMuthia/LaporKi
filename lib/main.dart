@@ -42,7 +42,7 @@ class MyApp extends StatelessWidget {
         '/register': (context) => const RegisterPage(),
         '/dashboard': (context) => const UserDashboard(),
         '/report_permission': (context) => const LocationPermissionPage(),
-        '/admin': (context) => const AdminDashboard(), // <--- 2. Tambahkan Rute ini
+        '/admin': (context) => const AdminDashboard(),
       },
     );
   }
