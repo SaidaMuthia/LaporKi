@@ -168,7 +168,7 @@ class _LoginPageState extends State<LoginPage> {
                   String passInput = _passwordController.text.trim();
 
                   // LOGIKA SIMPLE BYPASS (Hardcoded)
-                  if (emailInput == 'admin' && passInput == 'admin') {
+                  if (emailInput == 'admin@gmail.com' && passInput == 'admin123') {
                     // Jika login sebagai admin
                     Navigator.pushReplacementNamed(context, '/admin');
                     ScaffoldMessenger.of(context).showSnackBar(

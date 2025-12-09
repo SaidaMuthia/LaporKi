@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:laporki/admin/laporan_admin_page.dart';
 import 'package:laporki/admin/laporan_model.dart';
 
-// --- HOME ADMIN FRAGMENT (Berbeda dari User) ---
 // --- 2. ADMIN HOME PAGE (KONTEN BERANDA) ---
 
 class AdminHomePage extends StatelessWidget {
@@ -11,7 +10,7 @@ class AdminHomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Ambil 4 laporan terbaru untuk tampilan beranda
-    final List<Laporan> latestLaporan = laporanList.take(4).toList(); 
+    final List<Laporan> latestLaporan = laporanList.take(4).toList();
     
     return SingleChildScrollView(
       child: Column(

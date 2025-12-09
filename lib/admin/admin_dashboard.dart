@@ -37,7 +37,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround, // Bagi rata 4 item
           children: [
-            Expanded(child: _buildNavItem(icon: Icons.dashboard_rounded, label: "Beranda", index: 0)),
+            Expanded(child: _buildNavItem(icon: Icons.home_rounded, label: "Beranda", index: 0)),
             Expanded(child: _buildNavItem(icon: Icons.assignment_rounded, label: "Laporan", index: 1)),
             Expanded(child: _buildNavItem(icon: Icons.notifications_rounded, label: "Notifikasi", index: 2)),
             Expanded(child: _buildNavItem(icon: Icons.person_rounded, label: "Akun", index: 3)),
