@@ -11,7 +11,6 @@ class HomeFragment extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Data Dummy
     final List<Map<String, dynamic>> daftarLaporan = const [
       { 'judul': "Jalan Rusak Parah di Depan SD Inpres Tamalanrea", 'kategori': 'Infrastruktur', 'status': StatusLaporan.diproses, 'tanggal': '12 Mar', },
       { 'judul': "Sampah Menumpuk di Depan Pasar Panakukkang", 'kategori': 'Kebersihan', 'status': StatusLaporan.selesai, 'tanggal': '12 Mar', },
@@ -26,34 +25,34 @@ class HomeFragment extends StatelessWidget {
           toolbarHeight: 80, 
           backgroundColor: Colors.white, 
           elevation: 0,
-          centerTitle: false, // <--- PERUBAHAN: Menambahkan ini agar title rata kiri
+          centerTitle: false,
+          
+          // 🚨 TAMBAHKAN INI: Memastikan tidak ada tombol back otomatis 🚨
+          automaticallyImplyLeading: false, 
+
           title: const Column( 
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Halo,", style: TextStyle(color: Colors.grey, fontSize: 16)), // Warna abu
-              Text("Nama User!", style: TextStyle(color: Colors.black, fontSize: 24, fontWeight: FontWeight.bold)), // Ukuran besar
+              Text("Halo,", style: TextStyle(color: Colors.grey, fontSize: 16)), 
+              Text("Nama User!", style: TextStyle(color: Colors.black, fontSize: 24, fontWeight: FontWeight.bold)), 
             ],
           ),
           actions: [ 
             Padding(
               padding: const EdgeInsets.only(right: 20.0), 
-              child: Container( // Placeholder Logo/Icon
+              child: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: Theme.of(context).primaryColor, 
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.location_on, // Icon Placeholder Logo
-                  color: Colors.white,
-                  size: 24,
-                ),
+                child: const Icon(Icons.location_on, color: Colors.white, size: 24),
               ),
             ),
           ],
         ),
 
-        // 2. Konten List
+        // 2. Konten List (Tetap sama)
         SliverList(
           delegate: SliverChildListDelegate(
             [
@@ -62,16 +61,10 @@ class HomeFragment extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Banner Pengaduan
                     _buildBanner(context),
-                    
                     const SizedBox(height: 20),
-                    
-                    // Status LaporanKu
                     const Text("Status LaporanKu", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 15),
-
-                    // Tiga Kartu Status
                     Row(
                       children: [
                         _buildStatusCard("Diproses", 1, Colors.orange.shade50, Colors.orange, Icons.cached),
@@ -79,19 +72,12 @@ class HomeFragment extends StatelessWidget {
                         _buildStatusCard("Ditolak", 0, Colors.red.shade50, Colors.red.shade700, Icons.cancel_outlined),
                       ],
                     ),
-
                     const SizedBox(height: 20),
-
-                    // Laporan Terbaru
                     const Text("Laporan Terbaru", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 10),
-
-                    // List Laporan
                     Column(
                       children: daftarLaporan.map((laporan) => _buildLaporanItem(laporan)).toList(),
                     ),
-                    
-                    // Tambahan spasi di bawah agar tidak tertutup FAB
                     const SizedBox(height: 80),
                   ],
                 ),
@@ -103,8 +89,7 @@ class HomeFragment extends StatelessWidget {
     );
   }
 
-  // --- WIDGET BUILDER METHODS ---
-
+  // ... (Helper Methods _buildBanner, _buildStatusCard, _buildLaporanItem TETAP SAMA) ...
   Widget _buildBanner(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -170,17 +155,14 @@ class HomeFragment extends StatelessWidget {
     final String kategori = laporan['kategori'];
     final String tanggal = laporan['tanggal'];
     final StatusLaporan status = laporan['status'];
-    
     Color statusColor;
     String statusText;
     Color tagBaseColor;
-
     switch (status) {
       case StatusLaporan.diproses: statusColor = Colors.orange; statusText = "Diproses"; break;
       case StatusLaporan.selesai: statusColor = Colors.green; statusText = "Selesai"; break;
       default: statusColor = Colors.red; statusText = "Ditolak"; break;
     }
-    
     if (kategori == 'Kebersihan') {
       tagBaseColor = Colors.deepPurple;
     } else if (kategori == 'Lainnya') {
@@ -188,7 +170,6 @@ class HomeFragment extends StatelessWidget {
     } else {
       tagBaseColor = Colors.blue;
     }
-
     return InkWell(
       onTap: () {},
       child: Card(
@@ -245,6 +226,8 @@ class LaporankuFragment extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: const Text("LaporanKu"),
+          // 🚨 TAMBAHKAN INI JUGA 🚨
+          automaticallyImplyLeading: false,
           bottom: const TabBar(
             isScrollable: true,
             labelColor: Colors.blue,
@@ -260,7 +243,7 @@ class LaporankuFragment extends StatelessWidget {
         ),
         body: TabBarView(
           children: [
-            _buildReportList(context), // Semua
+            _buildReportList(context), 
             _buildReportList(context, filter: "Diproses"),
             _buildReportList(context, filter: "Selesai"),
             _buildReportList(context, filter: "Ditolak"),
@@ -269,17 +252,14 @@ class LaporankuFragment extends StatelessWidget {
       ),
     );
   }
-
+  // ... (_buildReportList TETAP SAMA) ...
   Widget _buildReportList(BuildContext context, {String? filter}) {
-    // Dummy Data
     final reports = [
       {"title": "Jalan Rusak Parah", "status": "Diproses", "color": Colors.amber, "cat": "Infrastruktur"},
       {"title": "Sampah Menumpuk", "status": "Selesai", "color": Colors.green, "cat": "Kebersihan"},
       {"title": "Lampu Jalan Mati", "status": "Ditolak", "color": Colors.red, "cat": "Infrastruktur"},
     ];
-
     final filtered = filter == null ? reports : reports.where((r) => r['status'] == filter).toList();
-
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: filtered.length,
@@ -331,13 +311,17 @@ class NotificationFragment extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Notifikasi")),
+      appBar: AppBar(
+        title: const Text("Notifikasi"),
+        // 🚨 TAMBAHKAN INI JUGA 🚨
+        automaticallyImplyLeading: false, 
+      ),
       body: ListView.separated(
         itemCount: 5,
         separatorBuilder: (_, _) => const Divider(height: 1),
         itemBuilder: (ctx, i) {
           return ListTile(
-            tileColor: i == 0 ? Colors.blue[50] : Colors.white, // Highlight unread
+            tileColor: i == 0 ? Colors.blue[50] : Colors.white, 
             leading: CircleAvatar(
               backgroundColor: Colors.blue[100],
               child: const Icon(Icons.notifications, color: Colors.blue),
@@ -359,7 +343,11 @@ class AccountFragment extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Akun Saya")),
+      appBar: AppBar(
+        title: const Text("Akun Saya"),
+        // 🚨 TAMBAHKAN INI JUGA 🚨
+        automaticallyImplyLeading: false, 
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
