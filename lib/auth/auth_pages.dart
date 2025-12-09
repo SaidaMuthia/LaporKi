@@ -73,7 +73,7 @@ class _LoginPageState extends State<LoginPage> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pushReplacement(
+          onPressed: () => Navigator.push(
             context, 
             MaterialPageRoute(builder: (context) => const OnboardingPage())
           ),
@@ -166,7 +166,7 @@ class _RegisterPageState extends State<RegisterPage> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pushReplacement(
+          onPressed: () => Navigator.push(
             context, 
             MaterialPageRoute(builder: (context) => const OnboardingPage())
           ),
