@@ -39,7 +39,6 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginPage(),
         '/register': (context) => const RegisterPage(),
         '/dashboard': (context) => const UserDashboard(),
-        // Route untuk Flow Pelaporan
         '/report_permission': (context) => const LocationPermissionPage(),
       },
     );

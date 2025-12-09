@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:laporki/user/user_dashboard.dart'; // Pastikan path ini benar
 
 // --- ONBOARDING PAGE ---
 class OnboardingPage extends StatelessWidget {
@@ -7,7 +8,7 @@ class OnboardingPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).primaryColor,
+      backgroundColor: const Color(0xFF005AC2), // Warna primary
       body: Padding(
         padding: const EdgeInsets.all(40.0),
         child: Column(
@@ -27,7 +28,7 @@ class OnboardingPage extends StatelessWidget {
             ),
             const SizedBox(height: 40),
             const Text(
-              'Suara Ta Didengar\nMasalah Ta Ditindak',
+              'Suara Ta\' Didengar\nMasalah Ta\' Ditindak',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
             ),
@@ -36,7 +37,10 @@ class OnboardingPage extends StatelessWidget {
               width: double.infinity,
               height: 55,
               child: ElevatedButton(
-                onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
+                onPressed: () => Navigator.pushReplacement(
+                  context, 
+                  MaterialPageRoute(builder: (context) => const LoginPage())
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
                   foregroundColor: Colors.black,
@@ -66,7 +70,15 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(leading: const BackButton()),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pushReplacement(
+            context, 
+            MaterialPageRoute(builder: (context) => const OnboardingPage())
+          ),
+        ),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(25),
         child: Column(
@@ -74,7 +86,6 @@ class _LoginPageState extends State<LoginPage> {
           children: [
             const Text("Selamat Datang", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
             const SizedBox(height: 20),
-            // Toggle Login/Daftar
             _buildTabToggle(context, isLogin: true),
             const SizedBox(height: 30),
             TextFormField(
@@ -104,9 +115,12 @@ class _LoginPageState extends State<LoginPage> {
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: () => Navigator.pushReplacementNamed(context, '/dashboard'),
+                onPressed: () => Navigator.pushReplacement(
+                  context, 
+                  MaterialPageRoute(builder: (context) => const UserDashboard())
+                ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).primaryColor,
+                  backgroundColor: const Color(0xFF005AC2),
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
@@ -119,8 +133,11 @@ class _LoginPageState extends State<LoginPage> {
               children: [
                 const Text("Belum punya akun? "),
                 GestureDetector(
-                  onTap: () => Navigator.pushReplacementNamed(context, '/register'),
-                  child: Text("Buat Akun", style: TextStyle(color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold)),
+                  onTap: () => Navigator.pushReplacement(
+                    context, 
+                    MaterialPageRoute(builder: (context) => const RegisterPage())
+                  ),
+                  child: const Text("Buat Akun", style: TextStyle(color: Color(0xFF005AC2), fontWeight: FontWeight.bold)),
                 ),
               ],
             )
@@ -139,13 +156,22 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
-  bool _obscureText = true;
+  bool _obscureText = true;         // Untuk password
+  bool _obscureConfirmText = true;  // Untuk konfirmasi password
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => Navigator.pushReplacementNamed(context, '/login'))),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pushReplacement(
+            context, 
+            MaterialPageRoute(builder: (context) => const OnboardingPage())
+          ),
+        ),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(25),
         child: Column(
@@ -159,6 +185,8 @@ class _RegisterPageState extends State<RegisterPage> {
             const SizedBox(height: 15),
             TextFormField(decoration: _inputDecoration("Masukkan Email")),
             const SizedBox(height: 15),
+            
+            // Password Field
             TextFormField(
               obscureText: _obscureText,
               decoration: _inputDecoration("Masukkan Kata Sandi").copyWith(
@@ -169,20 +197,51 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
             ),
             const SizedBox(height: 15),
-            TextFormField(obscureText: true, decoration: _inputDecoration("Konfirmasi Kata Sandi")),
+
+            // Konfirmasi Password Field (SUDAH DIPERBAIKI)
+            TextFormField(
+              obscureText: _obscureConfirmText, // Gunakan variabel khusus konfirmasi
+              decoration: _inputDecoration("Konfirmasi Kata Sandi").copyWith(
+                suffixIcon: IconButton(
+                  icon: Icon(_obscureConfirmText ? Icons.visibility_off : Icons.visibility),
+                  onPressed: () => setState(() => _obscureConfirmText = !_obscureConfirmText),
+                ),
+              ),
+            ),
+            
             const SizedBox(height: 30),
             SizedBox(
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
+                onPressed: () {
+                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Daftar Berhasil!")));
+                   Navigator.pushReplacement(
+                     context, 
+                     MaterialPageRoute(builder: (context) => const LoginPage())
+                   );
+                },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).primaryColor,
+                  backgroundColor: const Color(0xFF005AC2),
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
                 child: const Text("Daftar", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text("Sudah punya akun? "),
+                GestureDetector(
+                  onTap: () => Navigator.pushReplacement(
+                    context, 
+                    MaterialPageRoute(builder: (context) => const LoginPage())
+                  ),
+                  child: const Text("Masuk", style: TextStyle(color: Color(0xFF005AC2), fontWeight: FontWeight.bold)),
+                ),
+              ],
             ),
           ],
         ),
@@ -200,20 +259,26 @@ Widget _buildTabToggle(BuildContext context, {required bool isLogin}) {
       children: [
         Expanded(
           child: GestureDetector(
-            onTap: isLogin ? null : () => Navigator.pushReplacementNamed(context, '/login'),
+            onTap: isLogin ? null : () => Navigator.pushReplacement(
+              context, 
+              MaterialPageRoute(builder: (context) => const LoginPage())
+            ),
             child: Container(
               alignment: Alignment.center,
-              decoration: isLogin ? BoxDecoration(color: Theme.of(context).primaryColor, borderRadius: BorderRadius.circular(25)) : null,
+              decoration: isLogin ? BoxDecoration(color: const Color(0xFF005AC2), borderRadius: BorderRadius.circular(25)) : null,
               child: Text("Masuk", style: TextStyle(color: isLogin ? Colors.white : Colors.black54, fontWeight: FontWeight.bold)),
             ),
           ),
         ),
         Expanded(
           child: GestureDetector(
-            onTap: !isLogin ? null : () => Navigator.pushReplacementNamed(context, '/register'),
+            onTap: !isLogin ? null : () => Navigator.pushReplacement(
+              context, 
+              MaterialPageRoute(builder: (context) => const RegisterPage())
+            ),
             child: Container(
               alignment: Alignment.center,
-              decoration: !isLogin ? BoxDecoration(color: Theme.of(context).primaryColor, borderRadius: BorderRadius.circular(25)) : null,
+              decoration: !isLogin ? BoxDecoration(color: const Color(0xFF005AC2), borderRadius: BorderRadius.circular(25)) : null,
               child: Text("Daftar", style: TextStyle(color: !isLogin ? Colors.white : Colors.black54, fontWeight: FontWeight.bold)),
             ),
           ),
