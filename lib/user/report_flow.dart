@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:laporki/user/user_dashboard.dart';
 
 // --- 1. PERMISSION PAGE ---
 class LocationPermissionPage extends StatelessWidget {
@@ -483,6 +484,7 @@ class ReviewReportPage extends StatelessWidget {
                 onPressed: () {
                   // Aksi Kirim Data
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Laporan Terkirim!")));
+                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const UserDashboard()));
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF0055D4),

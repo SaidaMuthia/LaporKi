@@ -31,6 +31,17 @@ class _UserDashboardState extends State<UserDashboard> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    // --- SOLUSI FAB TERBANG ---
+    // Setiap kali halaman ini dibuka (misal setelah kirim laporan),
+    // kita paksa hapus SnackBar agar tombol biru TIDAK terdorong ke atas.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ScaffoldMessenger.of(context).clearSnackBars();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     // Menghitung lebar layar untuk proporsi tombol navbar
     final double screenWidth = MediaQuery.of(context).size.width;
