@@ -1,8 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:laporki/user/report_flow.dart'; // Import alur laporan
-import 'package:laporki/fragments.dart'; // Import halaman-halaman (Home, History, dll)
-// import 'package:laporki/profile_pages.dart'; // Import halaman profil jika terpisah
+import 'package:laporki/fragments.dart';
+import './report_flow.dart'; // <-- BARU: Import alur laporan
 
+void main() {
+  runApp(const MaterialApp(
+    debugShowCheckedModeBanner: false,
+    home: UserDashboard(),
+  ));
+}
+
+// ==========================================
+// 1. UTAMA: USER DASHBOARD (NAVIGASI)
+// ==========================================
 class UserDashboard extends StatefulWidget {
   const UserDashboard({super.key});
 
@@ -11,105 +20,105 @@ class UserDashboard extends StatefulWidget {
 }
 
 class _UserDashboardState extends State<UserDashboard> {
-  int _currentIndex = 0;
+  int _selectedIndex = 0; // Index halaman aktif
 
-  // Daftar Halaman untuk Tab Bar
+  // Daftar Halaman (Fragment)
   final List<Widget> _pages = [
-    const HomeFragment(),       // Index 0: Beranda
-    const LaporankuFragment(),    // Index 1: Riwayat Laporan
-    const NotificationFragment(), // Index 2: Notifikasi
-    const AccountFragment(),    // Index 3: Profil
+    const HomeFragment(),           // Index 0: Beranda
+    const LaporankuFragment(),      // Index 1: Riwayat
+    const NotificationFragment(),   // Index 2: Notifikasi
+    const AccountFragment(),        // Index 3: Akun Saya
   ];
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      // Menampilkan halaman sesuai index yang dipilih
-      body: _pages[_currentIndex],
+    // Menghitung lebar layar untuk proporsi tombol navbar
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final double buttonWidth = screenWidth / 5; 
 
-      // 1. TOMBOL LAPOR (Tengah & Biru)
+    return Scaffold(
+      backgroundColor: Colors.white,
+      
+      // BODY: Menampilkan halaman sesuai index yang dipilih
+      body: _pages[_selectedIndex],
+
+      // --- TOMBOL TENGAH (FAB) ---
       floatingActionButton: SizedBox(
-        height: 70, // Ukuran tombol lebih besar
+        height: 70,
         width: 70,
         child: FloatingActionButton(
           onPressed: () {
-            // Aksi: Buka halaman Laporan
+            // FIX: Navigasi ke halaman izin lokasi (awal alur laporan)
             Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const LocationPermissionPage()),
+              context, 
+              MaterialPageRoute(builder: (context) => const LocationPermissionPage())
             );
           },
-          backgroundColor: const Color(0xFF0055D4), // Warna Biru Utama
-          shape: const CircleBorder(), // Bentuk bulat sempurna
+          backgroundColor: const Color(0xFF005AC2), // Warna Biru Tema
+          shape: const CircleBorder(),
           elevation: 4.0,
-          // Icon Kamera/Tambah Laporan
           child: const Icon(Icons.add_a_photo_outlined, size: 32, color: Colors.white),
         ),
       ),
       
-      // 2. Posisi Tombol: Di tengah & menempel di dock bawah
+      // Lokasi FAB di tengah dock
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
 
-      // 3. NAVIGATION BAR (BottomAppBar)
+      // --- BOTTOM NAVIGATION BAR ---
       bottomNavigationBar: BottomAppBar(
-        shape: const CircularNotchedRectangle(), // Membuat lekukan untuk tombol
-        notchMargin: 10.0, // Jarak antara tombol dan bar
+        shape: const CircularNotchedRectangle(), // Membuat lekukan
+        notchMargin: 10.0, 
         color: Colors.white,
         elevation: 10,
-        height: 70, // Tinggi Navbar
+        height: 80, // Tinggi navbar
         padding: EdgeInsets.zero,
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            // --- KIRI ---
-            _buildNavItem(icon: Icons.home_rounded, label: "Beranda", index: 0),
-            _buildNavItem(icon: Icons.history_rounded, label: "LaporanKu", index: 1),
+            // KIRI (Beranda & Riwayat)
+            Expanded(child: _buildNavItem(icon: Icons.home_rounded, label: "Beranda", index: 0)),
+            Expanded(child: _buildNavItem(icon: Icons.history_rounded, label: "Riwayat", index: 1)),
 
-            // SPASI KOSONG DI TENGAH (Untuk tempat tombol biru)
-            const SizedBox(width: 40),
+            // TENGAH (Space Kosong untuk FAB)
+            SizedBox(width: buttonWidth * 0.8), 
 
-            // --- KANAN ---
-            _buildNavItem(icon: Icons.notifications_rounded, label: "Notifikasi", index: 2),
-            _buildNavItem(icon: Icons.person_rounded, label: "Akun", index: 3),
+            // KANAN (Notifikasi & Akun)
+            Expanded(child: _buildNavItem(icon: Icons.notifications_rounded, label: "Notifikasi", index: 2)),
+            Expanded(child: _buildNavItem(icon: Icons.person_rounded, label: "Akun", index: 3)),
           ],
         ),
       ),
     );
   }
 
-  // Widget Helper untuk membuat item navigasi agar kodenya rapi
+  // Helper Widget untuk Item Navigasi
   Widget _buildNavItem({required IconData icon, required String label, required int index}) {
-    final bool isSelected = _currentIndex == index;
+    final bool isSelected = _selectedIndex == index;
+    final Color activeColor = const Color(0xFF005AC2);
     
     return InkWell(
       onTap: () {
         setState(() {
-          _currentIndex = index;
+          _selectedIndex = index;
         });
       },
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              color: isSelected ? const Color(0xFF0055D4) : Colors.grey,
-              size: 26,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            color: isSelected ? activeColor : Colors.grey,
+            size: 26,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? activeColor : Colors.grey,
+              fontSize: 11, 
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
             ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? const Color(0xFF0055D4) : Colors.grey,
-                fontSize: 11,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
