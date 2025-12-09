@@ -1,170 +1,165 @@
 import 'package:flutter/material.dart';
+import 'admin_state.dart'; 
+// Import model data tunggal
+import 'laporan_model.dart'; 
+// Import Halaman Admin
+import 'laporan_admin_page.dart';
+import 'notifikasi_admin_page.dart'; 
+import 'akun_admin_page.dart'; 
+import 'laporan_admin_page.dart';
 
-// Model data dummy untuk Laporan
-class Laporan {
-  final String judul;
-  final String kategori;
-  final String status;
-  final String tanggal;
-  final Color statusColor;
+// --- 1. ADMIN DASHBOARD UTAMA (CONTROLLER) ---
 
-  Laporan({
-    required this.judul,
-    required this.kategori,
-    required this.status,
-    required this.tanggal,
-    required this.statusColor,
-  });
-}
-
-// Data dummy
-final List<Laporan> laporanList = [
-  Laporan(
-    judul: 'Jalan Rusak Parah di Depan SD Inpres Tamalanrea',
-    kategori: 'Infrastruktur',
-    status: 'Diproses',
-    tanggal: '12 Mar',
-    statusColor: Colors.orange,
-  ),
-  Laporan(
-    judul: 'Jalan Rusak Parah di Depan SD Inpres Tamalanrea',
-    kategori: 'Infrastruktur',
-    status: 'Diproses',
-    tanggal: '12 Mar',
-    statusColor: Colors.orange,
-  ),
-  Laporan(
-    judul: 'Sampah Menumpuk di Depan Pasar Panakukkang',
-    kategori: 'Kebersihan',
-    status: 'Selesai',
-    tanggal: '12 Mar',
-    statusColor: Colors.green,
-  ),
-  Laporan(
-    judul: 'Sampah Menumpuk di Depan Pasar Panakukkang',
-    kategori: 'Kebersihan',
-    status: 'Selesai',
-    tanggal: '12 Mar',
-    statusColor: Colors.green,
-  ),
-];
-
-// Admin Dashboard Utama
 class AdminDashboard extends StatelessWidget {
   const AdminDashboard({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    final primaryColor = Theme.of(context).primaryColor; 
+  final List<Widget> _pages = const [
+    AdminHomePage(),         // 0: Beranda
+    LaporanAdminPage(),      // 1: Laporan
+    NotifikasiAdminPage(),   // 2: Notifikasi 
+    AkunAdminPage(),         // 3: Akun 
+  ];
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor, 
+  // Widget untuk AppBar kustom yang hanya muncul di Halaman Beranda
+  PreferredSizeWidget _buildCustomAppBar(BuildContext context) {
+    final primaryColor = Theme.of(context).primaryColor;
+    return AppBar(
+      automaticallyImplyLeading: false, 
+      backgroundColor: Colors.transparent, 
+      elevation: 0,
+      toolbarHeight: 90, 
       
-      // 1. AppBar Kustom (Rata Kiri)
-      appBar: AppBar(
-        automaticallyImplyLeading: false, 
-        backgroundColor: Colors.transparent, 
-        elevation: 0,
-        toolbarHeight: 90, 
-        
-        // Teks Salam di Kiri Atas (Menggunakan Column di dalam title)
-        title: Padding(
-          padding: const EdgeInsets.only(left: 0, top: 20.0), 
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start, 
-            children: const [
-              Text(
-                'Halo,', 
-                style: TextStyle(
-                  color: Colors.black54, 
-                  fontSize: 24,
-                ),
-              ),
-              Text(
-                'Nama Admin!', 
-                style: TextStyle(
-                  color: Colors.black,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 28,
-                ),
-              ),
-            ],
-          ),
-        ),
-        
-        centerTitle: false, 
-        titleSpacing: 16.0, 
-
-        actions: [
-          // Ikon Lokasi/Logo Kanan Atas
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0, top: 10.0),
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: primaryColor, 
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.location_on_outlined, 
-                color: Colors.white,
-                size: 24,
-              ),
-            ),
-          ),
-        ],
-      ),
-      
-      // 2. Body
-      body: SingleChildScrollView(
+      title: Padding(
+        padding: const EdgeInsets.only(left: 0, top: 20.0), 
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            const SizedBox(height: 20), 
-            
-            // Ringkasan Laporan Hari Ini (SummaryCard)
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0),
-              child: SummaryCard(),
-            ),
-            
-            const SizedBox(height: 25),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0),
-              child: Text(
-                'Laporan Terbaru',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
+          crossAxisAlignment: CrossAxisAlignment.start, 
+          children: const [
+            Text(
+              'Halo,', 
+              style: TextStyle(
+                color: Colors.black54, 
+                fontSize: 24,
               ),
             ),
-            const SizedBox(height: 15),
-            
-            // Daftar Laporan
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: laporanList.length,
-              itemBuilder: (context, index) {
-                return LaporanListItem(laporan: laporanList[index]);
-              },
+            Text(
+              'Nama Admin!', 
+              style: TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+                fontSize: 28,
+              ),
             ),
-            const SizedBox(height: 80),
           ],
         ),
       ),
-      
-      // 3. BottomNavigationBar (Ditempatkan dengan benar, sejajar dengan body)
-      bottomNavigationBar: const CustomBottomNavBar(),
-      
-    ); // Penutup Scaffold
+      centerTitle: false, 
+      titleSpacing: 16.0, 
+
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 16.0, top: 10.0),
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: primaryColor, 
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.location_on_outlined, 
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<int>(
+      valueListenable: selectedIndexNotifier,
+      builder: (context, currentIndex, child) {
+        return Scaffold(
+          // Hanya tampilkan AppBar kustom di halaman Beranda (index 0)
+          appBar: currentIndex == 0 
+              ? _buildCustomAppBar(context) 
+              : null,
+          
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor, 
+          
+          // IndexedStack menampilkan halaman sesuai index
+          body: IndexedStack(
+            index: currentIndex,
+            children: _pages,
+          ),
+          
+          // Bottom Navigation Bar
+          bottomNavigationBar: CustomBottomNavBar(
+            currentIndex: currentIndex, 
+            onTap: (index) {
+              selectedIndexNotifier.value = index; // Update index
+            },
+          ),
+        );
+      },
+    );
   }
 }
 
+// --- 2. ADMIN HOME PAGE (KONTEN BERANDA) ---
 
-// --- Komponen-komponen Terpisah (SummaryCard, SummaryItem, LaporanListItem, CustomBottomNavBar) ---
+class AdminHomePage extends StatelessWidget {
+  const AdminHomePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // Ambil 4 laporan terbaru untuk tampilan beranda
+    final List<Laporan> latestLaporan = laporanList.take(4).toList(); 
+    
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          const SizedBox(height: 20), 
+          
+          // Ringkasan Laporan Hari Ini (SummaryCard)
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.0),
+            child: SummaryCard(),
+          ),
+          
+          const SizedBox(height: 25),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.0),
+            child: Text(
+              'Laporan Terbaru',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+          const SizedBox(height: 15),
+          
+          // Daftar Laporan
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: latestLaporan.length,
+            itemBuilder: (context, index) {
+              return LaporanListItem(laporan: latestLaporan[index]);
+            },
+          ),
+          const SizedBox(height: 80),
+        ],
+      ),
+    );
+  }
+}
+
+// --- 3. KOMPONEN LAINNYA (SummaryCard, LaporanListItem, CustomBottomNavBar) ---
 
 class SummaryCard extends StatelessWidget {
   const SummaryCard({super.key});
@@ -191,11 +186,7 @@ class SummaryCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              Icon(
-                Icons.description,
-                color: Colors.white,
-                size: 28,
-              ),
+              Icon(Icons.description, color: Colors.white, size: 28),
               SizedBox(width: 8),
               Text(
                 'Rangkuman Laporan Hari Ini',
@@ -212,19 +203,17 @@ class SummaryCard extends StatelessWidget {
             children: <Widget>[
               Expanded(
                 child: SummaryItem(
-                  count: 1,
+                  count: 1, // Ganti dengan logika penghitungan data riil
                   label: 'Laporan Baru',
-                  color: Color(0xFFFFCC00), // Warna kuning untuk Baru
-                  iconColor: Color(0xFFFFCC00),
+                  iconColor: Color(0xFFFFCC00), 
                 ),
               ),
               SizedBox(width: 15),
               Expanded(
                 child: SummaryItem(
-                  count: 1,
+                  count: 1, // Ganti dengan logika penghitungan data riil
                   label: 'Laporan Diproses',
-                  color: Color(0xFFFF9500), // Warna oranye untuk Diproses
-                  iconColor: Color(0xFFFF9500),
+                  iconColor: Color(0xFFFF9500), 
                 ),
               ),
             ],
@@ -238,14 +227,12 @@ class SummaryCard extends StatelessWidget {
 class SummaryItem extends StatelessWidget {
   final int count;
   final String label;
-  final Color color;
-  final Color iconColor;
+  final Color iconColor; // Hapus properti 'color' yang tidak terpakai
 
   const SummaryItem({
     super.key,
     required this.count,
     required this.label,
-    required this.color,
     required this.iconColor,
   });
 
@@ -283,7 +270,12 @@ class SummaryItem extends StatelessWidget {
   }
 }
 
+// LaporanListItem ini menggunakan model Laporan dari laporan_model.dart.
+// Note: Widget ini seharusnya hanya menampilkan judul, kategori, status, dan tanggal di Beranda,
+// tapi saya menggunakan versi lengkapnya agar konsisten dengan file Laporan Admin Anda.
+
 class LaporanListItem extends StatelessWidget {
+  // FINAL PENTING: Pindahkan semua required parameter ke constructor.
   final Laporan laporan;
 
   const LaporanListItem({super.key, required this.laporan});
@@ -310,11 +302,7 @@ class LaporanListItem extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          Icons.circle,
-          size: 8,
-          color: color,
-        ),
+        Icon(Icons.circle, size: 8, color: color),
         const SizedBox(width: 5),
         Text(
           status,
@@ -334,8 +322,7 @@ class LaporanListItem extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: InkWell(
         onTap: () {
-          // Aksi ketika item laporan ditekan
-          debugPrint('Laporan ${laporan.judul} ditekan.');
+          debugPrint('Laporan ${laporan.judul} ditekan. (Navigasi ke Detail)');
         },
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
@@ -386,11 +373,7 @@ class LaporanListItem extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(
-                Icons.arrow_forward_ios,
-                color: Colors.grey,
-                size: 16,
-              ),
+              const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 16),
             ],
           ),
         ),
@@ -399,11 +382,19 @@ class LaporanListItem extends StatelessWidget {
   }
 }
 
-class CustomBottomNavBar extends StatelessWidget {
-  const CustomBottomNavBar({super.key});
 
-  @override
-  Widget build(BuildContext context) {
+class CustomBottomNavBar extends StatelessWidget {
+  final int currentIndex;
+  final ValueChanged<int> onTap;
+
+  const CustomBottomNavBar({
+    super.key,
+    required this.currentIndex,
+    required this.onTap,
+  });
+
+  @override 
+  Widget build(BuildContext context) { 
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -421,34 +412,15 @@ class CustomBottomNavBar extends StatelessWidget {
         selectedItemColor: Theme.of(context).primaryColor,
         unselectedItemColor: Colors.grey,
         showUnselectedLabels: true,
-        currentIndex: 0,
+        currentIndex: currentIndex, 
         elevation: 0,
         items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Beranda',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.description_outlined),
-            activeIcon: Icon(Icons.description),
-            label: 'Laporan',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications_outlined),
-            activeIcon: Icon(Icons.notifications),
-            label: 'Notifikasi',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outlined),
-            activeIcon: Icon(Icons.person),
-            label: 'Akun',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Beranda'),
+          BottomNavigationBarItem(icon: Icon(Icons.description_outlined), activeIcon: Icon(Icons.description), label: 'Laporan'),
+          BottomNavigationBarItem(icon: Icon(Icons.notifications_outlined), activeIcon: Icon(Icons.notifications), label: 'Notifikasi'),
+          BottomNavigationBarItem(icon: Icon(Icons.person_outlined), activeIcon: Icon(Icons.person), label: 'Akun'),
         ],
-        onTap: (index) {
-          // Navigasi admin (sesuaikan dengan rute Anda)
-          debugPrint('Admin Navigasi ke index $index');
-        },
+        onTap: onTap, 
       ),
     );
   }
