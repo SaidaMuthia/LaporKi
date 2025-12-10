@@ -3,6 +3,10 @@ import 'package:laporki/user/user_dashboard.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'report_draft.dart';
+// Import yang diperlukan untuk ReportDetailPage dan Laporan Model
+import 'package:laporki/admin/laporan_model.dart'; // <--- PASTIKAN PATH INI BENAR
+import 'package:laporki/user/report_detail.dart'; // <--- PASTIKAN PATH INI BENAR
+// Import lainnya
 import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
@@ -11,7 +15,6 @@ import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
 import 'package:latlong2/latlong.dart';
 import 'pick_map_page.dart';
-
 
 // --- 1. PERMISSION PAGE ---
 class LocationPermissionPage extends StatelessWidget {
@@ -620,29 +623,79 @@ class _SetDetailsPageState extends State<SetDetailsPage> {
   }
 }
 
-// --- 6. REVIEW & SUBMIT PAGE ---
-class ReviewReportPage extends StatelessWidget {
+// --- 6. REVIEW & SUBMIT PAGE (DIUBAH MENJADI STATEFUL) ---
+class ReviewReportPage extends StatefulWidget {
   final ReportDraft draft;
   const ReviewReportPage({super.key, required this.draft});
 
+  @override
+  State<ReviewReportPage> createState() => _ReviewReportPageState();
+}
+
+class _ReviewReportPageState extends State<ReviewReportPage> {
+  bool _isLoading = false;
+
   Future<void> _submitReport(BuildContext context) async {
+    setState(() => _isLoading = true);
+    
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Anda harus login.')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Anda harus login.')));
+        setState(() => _isLoading = false);
+      }
       return;
     }
+    
     final pelapor = user.email ?? user.uid;
-    final laporanData = draft.toMap(pelapor: pelapor, status: 'Baru');
+    
     try {
-      await FirebaseFirestore.instance.collection('laporan').add(laporanData);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Laporan Terkirim!')));
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const UserDashboard()),
-        (route) => false,
+      // 1. Tentukan ID Laporan baru
+      final docRef = FirebaseFirestore.instance.collection('laporan').doc();
+      final laporanId = docRef.id;
+      
+      // Catatan: Logika upload gambar ke Firebase Storage diabaikan di sini 
+      // untuk fokus pada data passing, namun harus diimplementasikan secara riil.
+      String? imageUrl = widget.draft.imageFile != null ? 'path/to/uploaded/image.jpg' : null; 
+      
+      // 2. Buat objek Laporan lengkap (Asumsi: Anda punya Laporan Model yang bisa di-import)
+      final newLaporan = Laporan(
+        id: laporanId,
+        judul: widget.draft.judul ?? '',
+        lokasi: widget.draft.address ?? 'Lokasi tidak tersedia',
+        detailLokasi: widget.draft.detailLokasi ?? '',
+        deskripsi: widget.draft.deskripsi ?? '',
+        kategori: widget.draft.kategori ?? '',
+        jenis: widget.draft.jenis ?? '',
+        pelapor: pelapor,
+        status: 'Baru',
+        tanggal: DateTime.now().toString().substring(0, 10), // Format tanggal sederhana
+        statusColor: const Color(0xFF005AC2), // Warna status 'Baru'
+        imagePath: imageUrl ?? (widget.draft.imageFile?.path ?? 'assets/images/placeholder.png'),
       );
+
+      // 3. Simpan ke Firestore
+      // Asumsi: Laporan Model memiliki metode toMap() yang sesuai
+      final dataToSave = newLaporan.toMap(); 
+      await docRef.set(dataToSave);
+      
+      // 4. Sukses: Navigasi ke Halaman Laporan Terkirim (ReportSentPage)
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => ReportSentPage(newLaporan: newLaporan)), 
+          (route) => route.isFirst, // Kembali ke root (Dashboard)
+        );
+      }
+
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal mengirim laporan: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal mengirim laporan: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -664,22 +717,29 @@ class ReviewReportPage extends StatelessWidget {
             // Thumbnail Gambar
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: Image.network(
-                "https://via.placeholder.com/600x300", 
-                width: double.infinity,
-                height: 180,
-                fit: BoxFit.cover,
-              ),
+              child: widget.draft.imageFile != null 
+                ? Image.file(
+                    widget.draft.imageFile!, // Tampilkan gambar dari draft
+                    width: double.infinity,
+                    height: 180,
+                    fit: BoxFit.cover,
+                  )
+                : Image.network(
+                    "https://via.placeholder.com/600x300", // Placeholder jika tidak ada file
+                    width: double.infinity,
+                    height: 180,
+                    fit: BoxFit.cover,
+                  ),
             ),
             const SizedBox(height: 20),
 
-            // Item-item Review
-            _buildReviewItem("Judul Laporan", "Jalan Berlubang Parah di Depan SMA 8 Gowa"),
-            _buildReviewItem("Lokasi Laporan", "Jl. Malino No.Km.6, Romang Lompoa, Kec. Bontomarannu, Kabupaten Gowa, Sulawesi Selatan 92171, Indonesia"),
-            _buildReviewItem("Detail Lokasi Laporan", "Trotoar di depan Balai Kota"),
-            _buildReviewItem("Deskripsi Laporan", "Jalan berlubang cukup dalam di depan Toko Sinar Jaya, menyebabkan kendaraan sering melambat dan hampir terjadi kecelakaan. Mohon segera dilakukan perbaikan sebelum menimbulkan bahaya lebih besar."),
-            _buildReviewItem("Kategori Laporan", "Infrastruktur"),
-            _buildReviewItem("Jenis Laporan", "Privat"),
+            // Item-item Review (FIXED: Menggunakan data dari draft)
+            _buildReviewItem("Judul Laporan", widget.draft.judul ?? '-'),
+            _buildReviewItem("Lokasi Laporan", widget.draft.address ?? '-'),
+            _buildReviewItem("Detail Lokasi Laporan", widget.draft.detailLokasi ?? '-'),
+            _buildReviewItem("Deskripsi Laporan", widget.draft.deskripsi ?? '-'),
+            _buildReviewItem("Kategori Laporan", widget.draft.kategori ?? '-'),
+            _buildReviewItem("Jenis Laporan", widget.draft.jenis ?? '-'),
 
             const SizedBox(height: 20),
             
@@ -688,13 +748,15 @@ class ReviewReportPage extends StatelessWidget {
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: () => _submitReport(context),
+                onPressed: _isLoading ? null : () => _submitReport(context),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF0055D4),
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
-                child: const Text("Kirim Laporan"),
+                child: _isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text("Kirim Laporan"),
               ),
             ),
             const SizedBox(height: 20),
@@ -735,6 +797,82 @@ class ReviewReportPage extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// --- 7. LAPORAN TERKIRIM (ReportSentPage) - BARU ---
+class ReportSentPage extends StatelessWidget {
+  final Laporan newLaporan;
+  
+  const ReportSentPage({super.key, required this.newLaporan});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        title: const Text('Laporan Terkirim'),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.check_circle, color: Colors.green, size: 100),
+              const SizedBox(height: 20),
+              const Text(
+                'Laporan Berhasil Dikirim!',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'Terima kasih telah berpartisipasi. Petugas kami akan segera menindaklanjuti laporan Anda.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey),
+              ),
+              const SizedBox(height: 40),
+              
+              // TOMBOL TINJAU LAPORAN DIPERBAIKI: Navigasi ke detail laporan yang baru
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ReportDetailPage(laporan: newLaporan), // <-- Meneruskan objek laporan yang baru
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0055D4),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  child: const Text('Tinjau Laporan Saya'),
+                ),
+              ),
+              
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: TextButton(
+                  onPressed: () {
+                    // Kembali ke dashboard (rute pertama)
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                  },
+                  child: const Text('Kembali ke Beranda', style: TextStyle(color: Colors.grey)),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

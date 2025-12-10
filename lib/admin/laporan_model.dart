@@ -12,8 +12,9 @@ class Laporan {
   final String pelapor;
   final String status;
   final String tanggal;
-  final Color statusColor; // <-- Tambahkan statusColor di model
-  final String imagePath;    // <-- Tambahkan untuk imagePath
+  final Color statusColor; 
+  final String imagePath;
+  final Timestamp? createdAt; // Tambahkan untuk kompatibilitas Firestore (opsional)
 
   Laporan({
     required this.id,
@@ -28,10 +29,31 @@ class Laporan {
     required this.tanggal,
     required this.statusColor,
     required this.imagePath,
+    this.createdAt,
   });
-}
 
-// File: lib/admin/laporan_admin_page.dart (Tambahkan setelah Laporan class)
+  // **********************************************
+  // PERBAIKAN: TAMBAHKAN METODE toMap() DI SINI
+  // **********************************************
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'judul': judul,
+      'lokasi': lokasi,
+      'detailLokasi': detailLokasi,
+      'deskripsi': deskripsi,
+      'kategori': kategori,
+      'jenis': jenis,
+      'pelapor': pelapor,
+      'status': status,
+      'tanggal': tanggal, 
+      'imagePath': imagePath,
+      // Gunakan createdAt yang sudah ada atau Timestamp.now() jika objek baru
+      'createdAt': createdAt ?? Timestamp.now(), 
+      // statusColor (Color) tidak dimasukkan karena bukan tipe data Firestore
+    };
+  }
+}
 
 // Data Dummy Laporan
 final List<Laporan> laporanList = [
@@ -49,24 +71,11 @@ final List<Laporan> laporanList = [
     statusColor: Colors.blue.shade700,
     imagePath: 'assets/images/jalan_rusak.png', // Ganti dengan path aset gambar Anda
   ),
-  //   Laporan(
-  //     id: 'LP-001',
-  //     judul: 'Penumpukkan Sampah di Pasar',
-  //     lokasi: 'Jl. Makassar',
-  //     detailLokasi: 'Dekat terminal lama',
-  //     deskripsi: 'Sampah menumpuk sudah 3 hari, menimbulkan bau tidak sedap.',
-  //     kategori: 'Kebersihan',
-  //     jenis: 'Publik',
-  //     pelapor: 'Citra H.',
-  //     status: 'Selesai',
-  //     tanggal: '2025-10-09',
-  //     statusColor: Colors.green.shade700,
-  //     imagePath: 'assets/images/sampah_menumpuk.png',
-  //   ),
-  //   // ... Tambahkan data laporan lainnya
+  // ... Tambahkan data laporan lainnya jika diperlukan
 ];
 
 Future<List<Laporan>> fetchLaporanList({String? userEmail, String? status}) async {
+  // PENTING: Gunakan 'createdAt' untuk pengurutan yang aman di Firestore
   Query query = FirebaseFirestore.instance.collection('laporan').orderBy('createdAt', descending: true);
   if (userEmail != null) {
     query = query.where('pelapor', isEqualTo: userEmail);
@@ -77,29 +86,48 @@ Future<List<Laporan>> fetchLaporanList({String? userEmail, String? status}) asyn
   final snapshot = await query.get();
   return snapshot.docs.map((doc) {
     final data = doc.data() as Map<String, dynamic>;
+    final statusData = data['status'] ?? 'Baru';
+    final Timestamp? createdAt = data['createdAt'] as Timestamp?;
+
+    // Perbaikan: Ambil tanggal dari Timestamp dengan aman
+    String formattedDate = '';
+    if (createdAt != null) {
+      formattedDate = createdAt.toDate().toLocal().toString().substring(0, 10);
+    } else {
+      formattedDate = data['tanggal'] ?? 'N/A';
+    }
+
     return Laporan(
       id: data['id'] ?? doc.id,
       judul: data['judul'] ?? '',
       lokasi: data['lokasi'] ?? data['address'] ?? '',
-      detailLokasi: data['detail_lokasi'] ?? '',
+      detailLokasi: data['detailLokasi'] ?? data['detail_lokasi'] ?? '',
       deskripsi: data['deskripsi'] ?? '',
       kategori: data['kategori'] ?? '',
       jenis: data['jenis'] ?? '',
       pelapor: data['pelapor'] ?? '',
-      status: data['status'] ?? '',
-      tanggal: (data['createdAt'] != null) ? DateTime.parse(data['createdAt']).toLocal().toString().substring(0, 10) : '',
-      statusColor: _getStatusColor(data['status']),
+      status: statusData,
+      tanggal: formattedDate,
+      statusColor: _getStatusColor(statusData),
       imagePath: data['imagePath'] ?? '',
+      createdAt: createdAt,
     );
   }).toList();
 }
 
 Color _getStatusColor(String? status) {
   switch (status) {
-    case 'Menunggu': return Colors.blue.shade700;
-    case 'Diproses': return Colors.orange.shade700;
-    case 'Selesai': return Colors.green.shade700;
-    case 'Ditolak': return Colors.red.shade700;
-    default: return Colors.grey;
+    case 'Baru': 
+    case 'Dilaporkan': 
+    case 'Menunggu': 
+      return Colors.blue.shade700;
+    case 'Diproses': 
+      return Colors.orange.shade700;
+    case 'Selesai': 
+      return Colors.green.shade700;
+    case 'Ditolak': 
+      return Colors.red.shade700;
+    default: 
+      return Colors.grey;
   }
 }
