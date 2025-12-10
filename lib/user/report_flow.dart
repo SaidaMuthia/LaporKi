@@ -459,7 +459,7 @@ class ReviewReportPage extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: Image.network(
-                "https://via.placeholder.com/600x300", // Ganti dengan image path
+                "https://via.placeholder.com/600x300", 
                 width: double.infinity,
                 height: 180,
                 fit: BoxFit.cover,
@@ -476,7 +476,7 @@ class ReviewReportPage extends StatelessWidget {
 
             const SizedBox(height: 20),
             
-            // Tombol Kirim (Opsional, karena di screenshot terpotong tapi biasanya ada)
+            // Tombol Kirim
             SizedBox(
               width: double.infinity,
               height: 50,
@@ -484,7 +484,15 @@ class ReviewReportPage extends StatelessWidget {
                 onPressed: () {
                   // Aksi Kirim Data
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Laporan Terkirim!")));
-                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const UserDashboard()));
+                  
+                  // 🚨 PERBAIKAN UTAMA DI SINI 🚨
+                  // Gunakan pushAndRemoveUntil untuk menghapus semua halaman sebelumnya (kamera, form, dll)
+                  // Ini membuat UserDashboard menjadi halaman 'root' baru, sehingga tidak ada tombol back.
+                  Navigator.pushAndRemoveUntil(
+                    context, 
+                    MaterialPageRoute(builder: (context) => const UserDashboard()), 
+                    (route) => false // Return false artinya hapus semua rute sebelumnya
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF0055D4),
@@ -527,7 +535,7 @@ class ReviewReportPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Icon(Icons.edit, size: 18, color: Color(0xFF0055D4)),
+                const Icon(Icons.lock_outline, size: 20, color: Colors.grey),
               ],
             ),
           ),

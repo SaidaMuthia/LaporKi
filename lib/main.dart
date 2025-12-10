@@ -7,7 +7,7 @@ import 'login_page.dart';
 import 'register_page.dart';
 import './user/user_dashboard.dart';
 import './user/report_flow.dart';
-
+import 'admin/admin_dashboard.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,12 +27,13 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'LaporKi',
       theme: ThemeData(
+        // ... (Theme Data tetap sama) ...
         primaryColor: const Color(0xFF005AC2),
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF005AC2),
           primary: const Color(0xFF005AC2),
         ),
-        scaffoldBackgroundColor: const Color(0xFFF5F7FA), // Background agak abu terang
+        scaffoldBackgroundColor: const Color(0xFFF5F7FA),
         useMaterial3: true,
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.white,
@@ -46,11 +47,12 @@ class MyApp extends StatelessWidget {
       ),
       initialRoute: '/onboarding',
       routes: {
-        '/onboarding': (context) => OnboardingPage(),
+        '/': (context) => OnboardingPage(),
         '/login': (context) => LoginPage(),
         '/register': (context) => RegisterPage(),
         '/dashboard': (context) => UserDashboard(),
         '/report_permission': (context) => LocationPermissionPage(),
+        '/admin': (context) => const AdminDashboard(),
       },
     );
   }
