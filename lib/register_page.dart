@@ -1,7 +1,7 @@
-import 'controllers/auth_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Tambahkan ini
+import 'package:cloud_firestore/cloud_firestore.dart'; // Tambahkan ini
 import 'login_page.dart';
-
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -11,7 +11,9 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
+  // Controller
   final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _nikController = TextEditingController(); // <-- TAMBAHAN: Controller NIK
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
@@ -22,34 +24,52 @@ class _RegisterPageState extends State<RegisterPage> {
   bool _rememberMe = false;
   bool _isLoading = false;
 
+  // --- LOGIKA REGISTER YANG DIPERBAIKI ---
   Future<void> registerUser() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final name = _nameController.text.trim();
-    final email = _emailController.text.trim();
-    final pass = _passwordController.text;
-    final confirm = _confirmPasswordController.text;
-
-    if (pass != confirm) {
+    // Cek password manual
+    if (_passwordController.text != _confirmPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password tidak cocok')));
       return;
     }
 
     setState(() => _isLoading = true);
+
     try {
+      // 1. Buat Akun di Firebase Auth
+      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
 
-      final user = await AuthController().registerUser(email, pass);
-      try {
-        await user.updateDisplayName(name);
-        await user.reload();
-      } catch (_){
+      // 2. Simpan Data Lengkap ke Firestore (Sesuai Request Anda)
+      String uid = userCredential.user!.uid;
+      
+      await FirebaseFirestore.instance.collection('users').doc(uid).set({
+        'uid': uid,
+        'email': _emailController.text.trim(),
+        'nama_lengkap': _nameController.text.trim(),
+        'nik': _nikController.text.trim(), // Data dari input NIK
+        'password': _passwordController.text.trim(), // Sesuai request disimpan string
+        'photoUrl': '', // Default kosong
+        'role': 'user', // Default role
+        'createdAt': FieldValue.serverTimestamp(), // Timestamp server
+      });
 
-      }
-          if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Registrasi berhasil')));
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginPage()));
-    } catch (e) {
       if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Registrasi berhasil')));
+      
+      // Pindah ke Login
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginPage()));
+
+    } on FirebaseAuthException catch (e) {
+      String message = "Terjadi kesalahan";
+      if (e.code == 'email-already-in-use') message = "Email sudah terdaftar";
+      if (e.code == 'weak-password') message = "Password terlalu lemah";
+      
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -59,6 +79,7 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   void dispose() {
     _nameController.dispose();
+    _nikController.dispose(); // Dispose NIK
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -97,7 +118,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
                 const SizedBox(height: 20),
 
-                // TAB SWITCH
+                // TAB SWITCH (Desain tetap sama)
                 Container(
                   height: 50,
                   decoration: BoxDecoration(
@@ -154,6 +175,23 @@ class _RegisterPageState extends State<RegisterPage> {
                   validator: (v) => (v == null || v.trim().isEmpty) ? 'Nama tidak boleh kosong' : null,
                 ),
                 const SizedBox(height: 15),
+
+                // --- TAMBAHAN: NIK FIELD (Desain mengikuti yang lain) ---
+                TextFormField(
+                  controller: _nikController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    hintText: "Masukkan NIK",
+                    filled: true,
+                    fillColor: const Color(0xfff0f0f0),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide.none),
+                  ),
+                  validator: (v) => (v == null || v.trim().isEmpty) ? 'NIK tidak boleh kosong' : null,
+                ),
+                const SizedBox(height: 15),
+                // --------------------------------------------------------
 
                 // EMAIL FIELD
                 TextFormField(
@@ -222,6 +260,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
                 const SizedBox(height: 10),
 
+                // CHECKBOX & LUPA PASSWORD
                 Row(
                   children: [
                     Checkbox(

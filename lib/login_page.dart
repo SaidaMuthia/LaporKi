@@ -1,10 +1,11 @@
-// ...existing code...
-import 'package:laporki/onboarding_page.dart';
-
-import 'controllers/auth_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Tambahkan
+import 'package:cloud_firestore/cloud_firestore.dart'; // Tambahkan
+import 'package:laporki/onboarding_page.dart';
 import 'register_page.dart';
 import './user/user_dashboard.dart';
+// Jika Anda punya admin dashboard, import di sini:
+// import './admin/admin_dashboard.dart'; 
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -28,34 +29,55 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
+  // --- LOGIKA LOGIN FIREBASE ---
   Future<void> signIn() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
     try {
-      await AuthController().signInUser(
-        _emailController.text.trim(),
-        _passwordController.text,
+      // 1. Login Auth
+      UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
       );
 
+      // 2. Cek Role di Firestore
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userCredential.user!.uid)
+          .get();
+
       if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => UserDashboard()),
-      );
+
+      if (userDoc.exists) {
+        String role = userDoc.get('role') ?? 'user';
+
+        if (role == 'admin') {
+          // Arahkan ke Admin Dashboard
+          // Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const AdminDashboard()));
+          // Karena file admin dashboard belum ada di import, saya komen dulu:
+          Navigator.pushReplacementNamed(context, '/admin'); 
+        } else {
+          // Default ke User Dashboard
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const UserDashboard()),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Data user tidak ditemukan")));
+      }
+
+    } on FirebaseAuthException catch (e) {
+      String message = "Login Gagal";
+      if(e.code == 'user-not-found') message = "User tidak ditemukan";
+      if(e.code == 'wrong-password') message = "Password salah";
+      
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
     } catch (e) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text("Error"),
-          content: Text(e.toString()),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK')),
-          ],
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -244,7 +266,3 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 }
-
-
-
-
