@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:laporki/admin/laporan_admin_page.dart';
+// import 'package:laporki/admin/laporan_admin_page.dart';
 import 'package:laporki/admin/laporan_model.dart';
+import 'package:laporki/admin/detail_laporan_screen.dart';
 
 // --- 2. ADMIN HOME PAGE (KONTEN BERANDA) ---
 
@@ -12,49 +13,101 @@ class AdminHomePage extends StatelessWidget {
     // Ambil 4 laporan terbaru untuk tampilan beranda
     final List<Laporan> latestLaporan = laporanList.take(4).toList();
     
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          const SizedBox(height: 20), 
-          
-          // Ringkasan Laporan Hari Ini (SummaryCard)
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.0),
-            child: SummaryCard(),
-          ),
-          
-          const SizedBox(height: 25),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.0),
-            child: Text(
-              'Laporan Terbaru',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
+    // UBAH STRUKTUR DISINI: Gunakan CustomScrollView agar bisa pakai SliverAppBar
+    return CustomScrollView(
+      slivers: [
+        // --- 1. BAGIAN APP BAR (HEADER) ---
+        SliverAppBar(
+          pinned: true, // Agar header tetap nempel saat discroll
+          toolbarHeight: 90, 
+          backgroundColor: Colors.white, 
+          elevation: 0,
+          centerTitle: false,
+          automaticallyImplyLeading: false, // Hilangkan tombol back
+
+          title: const Padding(
+            padding: EdgeInsets.only(top: 10.0),
+            child: Column( 
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Halo,", 
+                  style: TextStyle(color: Colors.grey, fontSize: 16)
+                ), 
+                Text(
+                  "Admin Kota!", // Teks khusus Admin
+                  style: TextStyle(
+                    color: Colors.black, 
+                    fontSize: 24, 
+                    fontWeight: FontWeight.bold
+                  )
+                ), 
+              ],
             ),
           ),
-          const SizedBox(height: 15),
-          
-          // Daftar Laporan
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: latestLaporan.length,
-            itemBuilder: (context, index) {
-              return LaporanListItem(laporan: latestLaporan[index]);
-            },
+          actions: [ 
+            Padding(
+              padding: const EdgeInsets.only(right: 20.0, top: 10.0), 
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor, 
+                  shape: BoxShape.circle,
+                ),
+                // Ikon diganti 'location_city' biar sedikit beda nuansa adminnya
+                child: const Icon(Icons.location_city, color: Colors.white, size: 24),
+              ),
+            ),
+          ],
+        ),
+
+        // --- 2. BAGIAN ISI KONTEN ---
+        SliverList(
+          delegate: SliverChildListDelegate(
+            [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    // Tidak perlu SizedBox di awal karena toolbarHeight sudah tinggi
+                    
+                    // Ringkasan Laporan Hari Ini (SummaryCard)
+                    const SummaryCard(),
+                    
+                    const SizedBox(height: 25),
+                    const Text(
+                      'Laporan Terbaru',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    
+                    // Daftar Laporan
+                    ListView.builder(
+                      shrinkWrap: true, // Wajib ada karena di dalam ScrollView
+                      physics: const NeverScrollableScrollPhysics(), // Scroll ikut induknya
+                      itemCount: latestLaporan.length,
+                      itemBuilder: (context, index) {
+                        return LaporanAdminFragment(laporan: latestLaporan[index]);
+                      },
+                    ),
+                    const SizedBox(height: 80),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 80),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
 
-// --- 3. KOMPONEN LAINNYA (SummaryCard, LaporanListItem, CustomBottomNavBar) ---
+// --- 3. KOMPONEN LAINNYA (TETAP SAMA SEPERTI SEBELUMNYA) ---
 
 class SummaryCard extends StatelessWidget {
   const SummaryCard({super.key});
@@ -84,7 +137,7 @@ class SummaryCard extends StatelessWidget {
               Icon(Icons.description, color: Colors.white, size: 28),
               SizedBox(width: 8),
               Text(
-                'Rangkuman Laporan Hari Ini',
+                'Rangkuman Laporan',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 18,
@@ -98,7 +151,7 @@ class SummaryCard extends StatelessWidget {
             children: <Widget>[
               Expanded(
                 child: SummaryItem(
-                  count: 1, // Ganti dengan logika penghitungan data riil
+                  count: 5, // Data Dummy
                   label: 'Laporan Baru',
                   iconColor: Color(0xFFFFCC00), 
                 ),
@@ -106,8 +159,8 @@ class SummaryCard extends StatelessWidget {
               SizedBox(width: 15),
               Expanded(
                 child: SummaryItem(
-                  count: 1, // Ganti dengan logika penghitungan data riil
-                  label: 'Laporan Diproses',
+                  count: 2, // Data Dummy
+                  label: 'Diproses',
                   iconColor: Color(0xFFFF9500), 
                 ),
               ),
@@ -122,7 +175,7 @@ class SummaryCard extends StatelessWidget {
 class SummaryItem extends StatelessWidget {
   final int count;
   final String label;
-  final Color iconColor; // Hapus properti 'color' yang tidak terpakai
+  final Color iconColor; 
 
   const SummaryItem({
     super.key,
@@ -166,110 +219,348 @@ class SummaryItem extends StatelessWidget {
 }
 
 // --- LAPORAN ADMIN FRAGMENT (Manajemen Laporan) ---
-class LaporanAdminFragment extends StatelessWidget {
-  const LaporanAdminFragment({super.key});
+class LaporanAdminPage extends StatefulWidget {
+  const LaporanAdminPage({super.key});
+
+  @override
+  State<LaporanAdminPage> createState() => _LaporanAdminPageState();
+}
+
+class _LaporanAdminPageState extends State<LaporanAdminPage> {
+  // State untuk mengontrol tampilan pop-up filter
+  bool _showFilter = false;
+
+  void _toggleFilter() {
+    setState(() {
+      _showFilter = !_showFilter;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 3,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text("Manajemen Laporan"),
-          automaticallyImplyLeading: false, // Hapus panah back
-          backgroundColor: Colors.white,
-          elevation: 0,
-          bottom: const TabBar(
-            labelColor: Color(0xFF005AC2),
-            unselectedLabelColor: Colors.grey,
-            indicatorColor: Color(0xFF005AC2),
-            tabs: [
-              Tab(text: "Masuk"),
-              Tab(text: "Diproses"),
-              Tab(text: "Selesai"),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Laporan',
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        ),
+      ),
+      body: Stack( // Gunakan Stack agar Pop-up filter bisa muncul di atas konten lain
+        children: [
+          // Konten Utama (Search Bar dan List Laporan)
+          Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: SearchAndFilterBar(onFilterPressed: _toggleFilter),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: laporanList.length,
+                  itemBuilder: (context, index) {
+                    return LaporanAdminFragment(laporan: laporanList[index]);
+                  },
+                ),
+              ),
             ],
           ),
-        ),
-        body: TabBarView(
+
+          // Pop-up Filter (Hanya ditampilkan jika _showFilter = true)
+          if (_showFilter)
+            Positioned(
+              top: 70, // Sesuaikan posisi di bawah search bar
+              right: 16,
+              left: 16,
+              child: FilterPopupCard(
+                onClose: _toggleFilter,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ===============================================
+// Search Bar dan Ikon Filter
+// ===============================================
+class SearchAndFilterBar extends StatelessWidget {
+  final VoidCallback onFilterPressed;
+
+  const SearchAndFilterBar({super.key, required this.onFilterPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Row(
+        children: [
+          const Expanded(
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'Cari ID atau Judul Laporan',
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
+                prefixIcon: Icon(Icons.search, color: Colors.grey),
+                prefixIconConstraints: BoxConstraints(minWidth: 30, minHeight: 0),
+              ),
+            ),
+          ),
+          IconButton(
+            icon: Icon(Icons.filter_list, color: Theme.of(context).primaryColor),
+            onPressed: onFilterPressed, // Panggil fungsi toggle filter
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ===============================================
+// Pop-up Card Filter
+// ===============================================
+class FilterPopupCard extends StatelessWidget {
+  final VoidCallback onClose;
+
+  const FilterPopupCard({super.key, required this.onClose});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 8,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildList(status: "Menunggu"),
-            _buildList(status: "Diproses"),
-            _buildList(status: "Selesai"),
+            const Text(
+              'Filter Laporan',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const Divider(),
+            
+            // Filter Dropdowns
+            Row(
+              children: const [
+                Expanded(child: FilterDropdown(label: 'Kategori')),
+                SizedBox(width: 10),
+                Expanded(child: FilterDropdown(label: 'Status')),
+              ],
+            ),
+            const SizedBox(height: 15),
+
+            // Filter Tanggal
+            Row(
+              children: [
+                const Expanded(
+                  child: FilterTanggal(label: 'Tanggal'),
+                ),
+                // Tombol kalender berada di dalam FilterTanggal
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // Tombol Bersihkan Filter
+            TextButton(
+              onPressed: () {
+                // Logika bersihkan filter
+                onClose(); // Tutup pop-up setelah dibersihkan
+              },
+              child: const Text('Bersihkan Filter', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildList({required String status}) {
-    // Dummy Data Admin
-    final reports = List.generate(5, (index) => {
-      "title": "Laporan Contoh #$index",
-      "desc": "Deskripsi singkat masalah yang dilaporkan oleh warga...",
-      "loc": "Kec. Tamalanrea",
-      "date": "12 Mar"
-    });
+// ===============================================
+// Dropdown Filter Reusable
+// ===============================================
+class FilterDropdown extends StatelessWidget {
+  final String label;
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: reports.length,
-      itemBuilder: (context, index) {
-        final item = reports[index];
-        return Card(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-            side: BorderSide(color: Colors.grey.shade200)
+  const FilterDropdown({super.key, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(color: Colors.grey)),
+          const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
+        ],
+      ),
+    );
+  }
+}
+
+// ===============================================
+// Filter Tanggal Reusable
+// ===============================================
+class FilterTanggal extends StatelessWidget {
+  final String label;
+
+  const FilterTanggal({super.key, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(color: Colors.grey)),
+          const Icon(Icons.calendar_today, color: Colors.grey, size: 20),
+        ],
+      ),
+    );
+  }
+}
+
+// ===============================================
+// Laporan List Item (Disalin dari admin_dashboard.dart, sedikit dimodifikasi)
+// ===============================================
+class LaporanAdminFragment extends StatelessWidget {
+  final Laporan laporan;
+  
+  const LaporanAdminFragment({super.key, required this.laporan});
+
+  Widget _buildCategoryBadge(String kategori, BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Theme.of(context).primaryColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        kategori,
+        style: TextStyle(
+          color: Theme.of(context).primaryColor,
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge(String status, Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.circle,
+          size: 8,
+          color: color,
+        ),
+        const SizedBox(width: 5),
+        Text(
+          status,
+          style: TextStyle(
+            color: color,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
           ),
-          margin: const EdgeInsets.only(bottom: 12),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(color: Colors.blue[50], borderRadius: BorderRadius.circular(4)),
-                      child: Text("Infrastruktur", style: TextStyle(color: Colors.blue[800], fontSize: 11, fontWeight: FontWeight.bold)),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => DetailLaporanScreen(laporan: laporan),
+            ),
+          );
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(15),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                spreadRadius: 1,
+                blurRadius: 5,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      laporan.id,
+                      style: const TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.w500),
                     ),
-                    Text(item['date']!, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                    const SizedBox(height: 4),
+                    Text(
+                      laporan.judul,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: <Widget>[
+                        _buildCategoryBadge(laporan.kategori, context),
+                        const SizedBox(width: 12),
+                        _buildStatusBadge(laporan.status, laporan.statusColor),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      '${laporan.pelapor} - ${laporan.tanggal}',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 13,
+                      ),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 10),
-                Text(item['title']!, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                const SizedBox(height: 5),
-                Text(item['desc']!, style: const TextStyle(color: Colors.grey), maxLines: 2, overflow: TextOverflow.ellipsis),
-                const SizedBox(height: 12),
-                const Divider(),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(children: [
-                      const Icon(Icons.location_on_outlined, size: 14, color: Colors.grey),
-                      const SizedBox(width: 4),
-                      Text(item['loc']!, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                    ]),
-                    SizedBox(
-                      height: 32,
-                      child: ElevatedButton(
-                        onPressed: () { /* Buka Detail Admin */ },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF005AC2),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))
-                        ),
-                        child: const Text("Tindak Lanjut", style: TextStyle(fontSize: 12, color: Colors.white)),
-                      ),
-                    )
-                  ],
-                )
-              ],
-            ),
+              ),
+              const Icon(
+                Icons.arrow_forward_ios,
+                color: Colors.grey,
+                size: 16,
+              ),
+            ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }
@@ -321,7 +612,7 @@ class AccountFragment extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            const CircleAvatar(radius: 50, backgroundImage: NetworkImage("https://i.pravatar.cc/150?img=12")), // Gambar beda dikit biar tau ini admin
+            const CircleAvatar(radius: 50, backgroundImage: NetworkImage("https://i.pravatar.cc/150?img=12")), 
             const SizedBox(height: 15),
             const Text("Admin Utama", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const Text("admin@laporki.go.id", style: TextStyle(color: Colors.grey)),
@@ -331,7 +622,6 @@ class AccountFragment extends StatelessWidget {
             _menuItem(context, icon: Icons.settings_outlined, title: "Pengaturan Sistem"),
             const Divider(),
             _menuItem(context, icon: Icons.logout, title: "Keluar", color: Colors.red, onTap: () {
-               // Logika logout admin
                Navigator.pushReplacementNamed(context, '/login'); 
             }),
           ],
