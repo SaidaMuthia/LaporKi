@@ -12,6 +12,7 @@ import 'dart:io';
 import 'package:latlong2/latlong.dart';
 import 'pick_map_page.dart';
 
+
 // --- 1. PERMISSION PAGE ---
 class LocationPermissionPage extends StatelessWidget {
   final ReportDraft? draft;

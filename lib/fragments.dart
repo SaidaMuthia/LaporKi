@@ -23,17 +23,46 @@ class _HomeFragmentState extends State<HomeFragment> {
     _fetchLaporan();
   }
 
+  // MEMASTIKAN LOADING SELALU BERHENTI (SUCCESS/FAILURE)
   Future<void> _fetchLaporan() async {
-    final list = await fetchLaporanList();
-    setState(() {
-      _laporanList = list;
-      _loading = false;
-    });
+    try {
+      final list = await fetchLaporanList();
+      setState(() {
+        _laporanList = list;
+      });
+    } catch (e) {
+      // Jika terjadi error (misal, koneksi), list tetap kosong
+      setState(() {
+        _laporanList = []; 
+      });
+    } finally {
+      // APAPUN yang terjadi (sukses/gagal), loading harus berhenti
+      setState(() {
+        _loading = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final String nama = widget.userData?['nama_lengkap'] ?? 'Pengguna';
+    
+    // Tentukan konten Laporan Terbaru (List atau Placeholder)
+    Widget laporanContent;
+    
+    if (_loading) {
+      // Tampilkan Loading jika _loading masih true
+      laporanContent = const Center(child: CircularProgressIndicator());
+    } else if (_laporanList.isEmpty) {
+      // Tampilkan Placeholder jika loading selesai dan list kosong
+      laporanContent = const Center(child: Text("Belum ada laporan terbaru.", style: TextStyle(color: Colors.grey)));
+    } else {
+      // Tampilkan List jika loading selesai dan ada data
+      laporanContent = Column(
+        children: _laporanList.take(3).map((laporan) => _buildLaporanItem(context, laporan)).toList(),
+      );
+    }
+    
     return CustomScrollView(
       slivers: [
         // --- Bagian AppBar (Agar desain konsisten) ---
@@ -82,11 +111,10 @@ class _HomeFragmentState extends State<HomeFragment> {
                   const SizedBox(height: 20),
                   const Text("Laporan Terbaru", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 10),
-                  _loading
-                      ? const Center(child: CircularProgressIndicator())
-                      : Column(
-                          children: _laporanList.take(3).map((laporan) => _buildLaporanItem(context, laporan)).toList(),
-                        ),
+                  
+                  // Tampilkan konten yang sudah ditentukan (Loading/List/Placeholder)
+                  laporanContent,
+                            
                   const SizedBox(height: 80),
                 ],
               ),
@@ -250,11 +278,22 @@ class _LaporankuFragmentState extends State<LaporankuFragment> {
 
   Future<void> _fetchLaporanku() async {
     // TODO: Use user email from auth
-    final list = await fetchLaporanList();
-    setState(() {
-      _laporanList = list;
-      _loading = false;
-    });
+    try {
+      final list = await fetchLaporanList();
+      setState(() {
+        _laporanList = list;
+      });
+    } catch (e) {
+      // Jika terjadi error (misal, koneksi), list tetap kosong
+      setState(() {
+        _laporanList = [];
+      });
+    } finally {
+      // APAPUN yang terjadi, loading harus berhenti
+      setState(() {
+        _loading = false;
+      });
+    }
   }
 
   @override
@@ -294,7 +333,16 @@ class _LaporankuFragmentState extends State<LaporankuFragment> {
 
   Widget _buildReportList(BuildContext context, List<Laporan> list) {
     if (list.isEmpty) {
-      return const Center(child: Text("Belum ada laporan", style: TextStyle(color: Colors.grey)));
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(20.0),
+          child: Text(
+            "Belum ada laporan dalam kategori ini.", 
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey, fontSize: 16)
+          )
+        )
+      );
     }
     return ListView.builder(
       padding: const EdgeInsets.all(16),
@@ -402,15 +450,19 @@ class AccountFragment extends StatelessWidget {
             
             // Menu Item disesuaikan dengan permintaan sebelumnya
             _menuItem(context, icon: Icons.person_outline, title: "Edit Profil", onTap: () {
+              // ignore: unnecessary_const
               Navigator.push(context, MaterialPageRoute(builder: (_) => const EditProfilePage()));
             }),
             _menuItem(context, icon: Icons.info_outline, title: "Tentang Aplikasi", onTap: () {
+              // ignore: unnecessary_const
               Navigator.push(context, MaterialPageRoute(builder: (_) => TentangAplikasiPage()));
             }),
             _menuItem(context, icon: Icons.privacy_tip_outlined, title: "Kebijakan Privasi", onTap: () {
+              // ignore: unnecessary_const
               Navigator.push(context, MaterialPageRoute(builder: (_) => KebijakanPrivasiPage()));
             }),
             _menuItem(context, icon: Icons.description_outlined, title: "Syarat dan Ketentuan", onTap: () {
+              // ignore: unnecessary_const
               Navigator.push(context, MaterialPageRoute(builder: (_) => SyaratKetentuanPage()));
             }),
 
