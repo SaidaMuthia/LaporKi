@@ -87,7 +87,7 @@ class _UserDashboardState extends State<UserDashboard> {
           children: [
             // KIRI (Beranda & Riwayat)
             Expanded(child: _buildNavItem(icon: Icons.home_rounded, label: "Beranda", index: 0)),
-            Expanded(child: _buildNavItem(icon: Icons.history_rounded, label: "Riwayat", index: 1)),
+            Expanded(child: _buildNavItem(icon: Icons.assignment_rounded, label: "Laporanku", index: 1)),
 
             // TENGAH (Space Kosong untuk FAB)
             SizedBox(width: buttonWidth * 0.8), 
