@@ -1,10 +1,69 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 // ==========================================
 // 1. EDIT PROFIL PAGE
 // ==========================================
-class EditProfilePage extends StatelessWidget {
+class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
+
+  @override
+  State<EditProfilePage> createState() => _EditProfilePageState();
+}
+
+class _EditProfilePageState extends State<EditProfilePage> {
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController _namaController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _nikController = TextEditingController();
+  final TextEditingController _teleponController = TextEditingController();
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserData();
+  }
+
+  Future<void> _fetchUserData() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+    final data = doc.data();
+    if (data != null) {
+      _namaController.text = data['nama_lengkap'] ?? '';
+      _emailController.text = user.email ?? '';
+      _nikController.text = data['nik'] ?? '';
+      _teleponController.text = data['no_telepon'] ?? '';
+    }
+  }
+
+  Future<void> _saveProfile() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _isLoading = true);
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+      'nama_lengkap': _namaController.text.trim(),
+      'nik': _nikController.text.trim(),
+      'no_telepon': _teleponController.text.trim(),
+    });
+    setState(() => _isLoading = false);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profil berhasil diperbarui')));
+      Navigator.pop(context);
+    }
+  }
+
+  @override
+  void dispose() {
+    _namaController.dispose();
+    _emailController.dispose();
+    _nikController.dispose();
+    _teleponController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,76 +76,83 @@ class EditProfilePage extends StatelessWidget {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            Center(
-              child: Stack(
-                children: [
-                  const CircleAvatar(
-                    radius: 50, 
-                    backgroundImage: NetworkImage("https://i.pravatar.cc/150?img=11")
-                  ),
-                  Positioned(
-                    bottom: 0, 
-                    right: 0, 
-                    child: CircleAvatar(
-                      backgroundColor: Theme.of(context).primaryColor, 
-                      radius: 18, 
-                      child: const Icon(Icons.camera_alt, size: 18, color: Colors.white)
-                    )
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 30),
-            _buildField("Nama Lengkap", "Rahmat Hidayat"),
-            _buildField("Email", "rahmat.hidayat@email.com"),
-            _buildField("Nomor Telepon", "081234567890"),
-            _buildField("NIK", "1234567890123456"),
-            const SizedBox(height: 30),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).primaryColor, 
-                  foregroundColor: Colors.white, 
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              Center(
+                child: Stack(
+                  children: [
+                    const CircleAvatar(
+                      radius: 50, 
+                      backgroundImage: NetworkImage("https://i.pravatar.cc/150?img=11")
+                    ),
+                    Positioned(
+                      bottom: 0, 
+                      right: 0, 
+                      child: CircleAvatar(
+                        backgroundColor: Theme.of(context).primaryColor, 
+                        radius: 18, 
+                        child: const Icon(Icons.camera_alt, size: 18, color: Colors.white)
+                      )
+                    ),
+                  ],
                 ),
-                child: const Text("Simpan Perubahan", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildField(String label, String initialVal) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-          const SizedBox(height: 8),
-          TextFormField(
-            initialValue: initialVal,
-            decoration: InputDecoration(
-              filled: true, 
-              fillColor: Colors.grey.shade50, 
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10), 
-                borderSide: BorderSide(color: Colors.grey.shade300)
+              const SizedBox(height: 30),
+              TextFormField(
+                controller: _namaController,
+                decoration: const InputDecoration(
+                  labelText: "Nama Lengkap",
+                  filled: true,
+                ),
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Nama tidak boleh kosong' : null,
               ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10), 
-                borderSide: BorderSide(color: Colors.grey.shade300)
+              const SizedBox(height: 15),
+              TextFormField(
+                controller: _emailController,
+                enabled: false,
+                decoration: const InputDecoration(
+                  labelText: "Email",
+                  filled: true,
+                ),
               ),
-            ),
+              const SizedBox(height: 15),
+              TextFormField(
+                controller: _nikController,
+                decoration: const InputDecoration(
+                  labelText: "NIK",
+                  filled: true,
+                ),
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'NIK tidak boleh kosong' : null,
+              ),
+              const SizedBox(height: 15),
+              TextFormField(
+                controller: _teleponController,
+                decoration: const InputDecoration(
+                  labelText: "Nomor Telepon",
+                  filled: true,
+                ),
+              ),
+              const SizedBox(height: 30),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _saveProfile,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).primaryColor, 
+                    foregroundColor: Colors.white, 
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))
+                  ),
+                  child: _isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text("Simpan Perubahan", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
