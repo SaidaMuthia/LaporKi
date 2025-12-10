@@ -9,6 +9,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
+import 'package:latlong2/latlong.dart';
+import 'pick_map_page.dart';
 
 // --- 1. PERMISSION PAGE ---
 class LocationPermissionPage extends StatelessWidget {
@@ -374,8 +376,69 @@ class _SetLocationPageState extends State<SetLocationPage> {
           children: [
             const Text("Lokasi Laporan", style: TextStyle(fontWeight: FontWeight.w500)),
             const SizedBox(height: 8),
+            // ... (Kode sebelumnya: Text "Lokasi Laporan") ...
+            
+            // 1. Tombol Deteksi GPS Otomatis
             InkWell(
               onTap: _getCurrentLocation,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50, // Pembeda warna
+                  border: Border.all(color: const Color(0xFF0055D4)),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.my_location, color: Color(0xFF0055D4)),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _loading
+                          ? const Text("Mendeteksi...", style: TextStyle(color: Colors.grey))
+                          : Text(_address ?? "Gunakan GPS Saat Ini", style: TextStyle(color: const Color(0xFF0055D4), fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 10),
+            const Center(child: Text("Atau", style: TextStyle(color: Colors.grey))),
+            const SizedBox(height: 10),
+
+            // 2. Tombol Pilih Lewat Peta (BARU)
+            InkWell(
+              onTap: () async {
+                // Buka halaman peta, tunggu hasilnya (latlong)
+                final LatLng? result = await Navigator.push(
+                  context, 
+                  MaterialPageRoute(builder: (_) => const PickMapPage())
+                );
+
+                // Jika user memilih lokasi
+                if (result != null) {
+                  setState(() => _loading = true);
+                  
+                  // Simpan koordinat
+                  _latitude = result.latitude;
+                  _longitude = result.longitude;
+
+                  // Convert koordinat ke Alamat (Geocoding)
+                  try {
+                    List<Placemark> placemarks = await placemarkFromCoordinates(_latitude!, _longitude!);
+                    if (placemarks.isNotEmpty) {
+                      final p = placemarks.first;
+                      _address = "${p.street}, ${p.subLocality}, ${p.locality}, ${p.administrativeArea}";
+                    } else {
+                      _address = "Alamat tidak ditemukan";
+                    }
+                  } catch (e) {
+                    _address = "Gagal memuat alamat";
+                  }
+
+                  setState(() => _loading = false);
+                }
+              },
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                 decoration: BoxDecoration(
@@ -384,13 +447,12 @@ class _SetLocationPageState extends State<SetLocationPage> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.location_on_outlined, color: Color(0xFF0055D4)),
+                    const Icon(Icons.map_outlined, color: Colors.grey),
                     const SizedBox(width: 10),
                     Expanded(
-                      child: _loading
-                          ? const Text("Mendeteksi lokasi...", style: TextStyle(color: Colors.grey))
-                          : Text(_address ?? "Pilih lokasi", style: const TextStyle(color: Colors.grey)),
+                      child: Text(_address ?? "Pilih Lewat Peta", style: const TextStyle(color: Colors.black87)),
                     ),
+                    const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
                   ],
                 ),
               ),
