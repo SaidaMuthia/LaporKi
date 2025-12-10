@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import './user/report_detail.dart';
-import './profile_pages.dart';
-
-// --- ENUM STATUS ---
-enum StatusLaporan { diproses, selesai, ditolak, lainnya }
+import 'package:laporki/admin/laporan_model.dart'; // Pastikan import model ini ada
+import 'package:laporki/user/report_detail.dart'; // Pastikan import detail user ada
+import 'package:laporki/profile_pages.dart'; // Pastikan import profile ada
 
 // --- HOME FRAGMENT ---
 class HomeFragment extends StatelessWidget {
@@ -11,39 +9,34 @@ class HomeFragment extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<Map<String, dynamic>> daftarLaporan = const [
-      { 'judul': "Jalan Rusak Parah di Depan SD Inpres Tamalanrea", 'kategori': 'Infrastruktur', 'status': StatusLaporan.diproses, 'tanggal': '12 Mar', },
-      { 'judul': "Sampah Menumpuk di Depan Pasar Panakukkang", 'kategori': 'Kebersihan', 'status': StatusLaporan.selesai, 'tanggal': '12 Mar', },
-      { 'judul': "Tumpahan Oli di Jalan Raya", 'kategori': 'Lainnya', 'status': StatusLaporan.ditolak, 'tanggal': '12 Mar', },
-    ];
+    // 1. Ambil data dari Model global (bukan hardcode Map lagi)
+    final List<Laporan> displayList = laporanList.take(3).toList();
 
+    // 2. Wajib Return Widget (CustomScrollView)
     return CustomScrollView(
       slivers: [
-        // 1. AppBar Kustom (Sliver)
+        // --- Bagian AppBar (Agar desain konsisten) ---
         SliverAppBar(
-          pinned: true, 
-          toolbarHeight: 80, 
-          backgroundColor: Colors.white, 
+          pinned: true,
+          toolbarHeight: 80,
+          backgroundColor: Colors.white,
           elevation: 0,
           centerTitle: false,
-          
-          // 🚨 TAMBAHKAN INI: Memastikan tidak ada tombol back otomatis 🚨
-          automaticallyImplyLeading: false, 
-
-          title: const Column( 
+          automaticallyImplyLeading: false, // Hilangkan tombol back otomatis
+          title: const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Halo,", style: TextStyle(color: Colors.grey, fontSize: 16)), 
-              Text("Nama User!", style: TextStyle(color: Colors.black, fontSize: 24, fontWeight: FontWeight.bold)), 
+              Text("Halo,", style: TextStyle(color: Colors.grey, fontSize: 16)),
+              Text("Rahmat Hidayat!", style: TextStyle(color: Colors.black, fontSize: 24, fontWeight: FontWeight.bold)),
             ],
           ),
-          actions: [ 
+          actions: [
             Padding(
-              padding: const EdgeInsets.only(right: 20.0), 
+              padding: const EdgeInsets.only(right: 20.0),
               child: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor, 
+                  color: Theme.of(context).primaryColor,
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.location_on, color: Colors.white, size: 24),
@@ -52,7 +45,7 @@ class HomeFragment extends StatelessWidget {
           ],
         ),
 
-        // 2. Konten List (Tetap sama)
+        // --- Bagian Konten List ---
         SliverList(
           delegate: SliverChildListDelegate(
             [
@@ -75,8 +68,10 @@ class HomeFragment extends StatelessWidget {
                     const SizedBox(height: 20),
                     const Text("Laporan Terbaru", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 10),
+
+                    // Menampilkan List Laporan dari Model
                     Column(
-                      children: daftarLaporan.map((laporan) => _buildLaporanItem(laporan)).toList(),
+                      children: displayList.map((laporan) => _buildLaporanItem(context, laporan)).toList(),
                     ),
                     const SizedBox(height: 80),
                   ],
@@ -89,7 +84,8 @@ class HomeFragment extends StatelessWidget {
     );
   }
 
-  // ... (Helper Methods _buildBanner, _buildStatusCard, _buildLaporanItem TETAP SAMA) ...
+  // --- Helper Widgets ---
+
   Widget _buildBanner(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -108,8 +104,8 @@ class HomeFragment extends StatelessWidget {
           ElevatedButton(
             onPressed: () { debugPrint("BUAT ADUAN BARU diklik!"); },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white, 
-              minimumSize: const Size.fromHeight(40), 
+              backgroundColor: Colors.white,
+              minimumSize: const Size.fromHeight(40),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30))
             ),
             child: const Text("BUAT ADUAN BARU", style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
@@ -150,28 +146,18 @@ class HomeFragment extends StatelessWidget {
     );
   }
 
-  Widget _buildLaporanItem(Map<String, dynamic> laporan) {
-    final String judul = laporan['judul'];
-    final String kategori = laporan['kategori'];
-    final String tanggal = laporan['tanggal'];
-    final StatusLaporan status = laporan['status'];
-    Color statusColor;
-    String statusText;
-    Color tagBaseColor;
-    switch (status) {
-      case StatusLaporan.diproses: statusColor = Colors.orange; statusText = "Diproses"; break;
-      case StatusLaporan.selesai: statusColor = Colors.green; statusText = "Selesai"; break;
-      default: statusColor = Colors.red; statusText = "Ditolak"; break;
-    }
-    if (kategori == 'Kebersihan') {
-      tagBaseColor = Colors.deepPurple;
-    } else if (kategori == 'Lainnya') {
-      tagBaseColor = Colors.grey;
-    } else {
-      tagBaseColor = Colors.blue;
-    }
+  // FIXED: Menerima objek 'Laporan' bukan 'Map'
+  Widget _buildLaporanItem(BuildContext context, Laporan laporan) {
     return InkWell(
-      onTap: () {},
+      onTap: () {
+        // Navigasi ke Detail Laporan User
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ReportDetailPage(laporan: laporan),
+          ),
+        );
+      },
       child: Card(
         elevation: 2,
         margin: const EdgeInsets.only(bottom: 15),
@@ -186,7 +172,7 @@ class HomeFragment extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(judul, maxLines: 2, overflow: TextOverflow.ellipsis,
+                    Text(laporan.judul, maxLines: 2, overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.black87),
                     ),
                     const SizedBox(height: 8),
@@ -194,13 +180,17 @@ class HomeFragment extends StatelessWidget {
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(color: tagBaseColor.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
-                          child: Text(kategori, style: TextStyle(color: tagBaseColor, fontSize: 11, fontWeight: FontWeight.bold)),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).primaryColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(6)
+                          ),
+                          child: Text(laporan.kategori, style: TextStyle(color: Theme.of(context).primaryColor, fontSize: 11, fontWeight: FontWeight.bold)),
                         ),
                         const SizedBox(width: 8),
-                        Text("• $statusText", style: TextStyle(color: statusColor, fontSize: 12)),
+                        // Gunakan warna langsung dari Model
+                        Text("• ${laporan.status}", style: TextStyle(color: laporan.statusColor, fontSize: 12)),
                         const SizedBox(width: 8),
-                        Text("• $tanggal", style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                        Text("• ${laporan.tanggal}", style: TextStyle(color: Colors.grey[600], fontSize: 12)),
                       ],
                     ),
                   ],
@@ -226,7 +216,6 @@ class LaporankuFragment extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: const Text("LaporanKu"),
-          // 🚨 TAMBAHKAN INI JUGA 🚨
           automaticallyImplyLeading: false,
           bottom: const TabBar(
             isScrollable: true,
@@ -243,8 +232,8 @@ class LaporankuFragment extends StatelessWidget {
         ),
         body: TabBarView(
           children: [
-            _buildReportList(context), 
-            _buildReportList(context, filter: "Diproses"),
+            _buildReportList(context),
+            _buildReportList(context, filter: "Sedang Diproses"), // Sesuaikan string dengan data dummy
             _buildReportList(context, filter: "Selesai"),
             _buildReportList(context, filter: "Ditolak"),
           ],
@@ -252,25 +241,35 @@ class LaporankuFragment extends StatelessWidget {
       ),
     );
   }
-  // ... (_buildReportList TETAP SAMA) ...
+
   Widget _buildReportList(BuildContext context, {String? filter}) {
-    final reports = [
-      {"title": "Jalan Rusak Parah", "status": "Diproses", "color": Colors.amber, "cat": "Infrastruktur"},
-      {"title": "Sampah Menumpuk", "status": "Selesai", "color": Colors.green, "cat": "Kebersihan"},
-      {"title": "Lampu Jalan Mati", "status": "Ditolak", "color": Colors.red, "cat": "Infrastruktur"},
-    ];
-    final filtered = filter == null ? reports : reports.where((r) => r['status'] == filter).toList();
+    // Filter data dari model global 'laporanList'
+    final filtered = filter == null
+        ? laporanList
+        : laporanList.where((r) => r.status == filter).toList();
+
+    if (filtered.isEmpty) {
+      return Center(child: Text("Belum ada laporan $filter", style: const TextStyle(color: Colors.grey)));
+    }
+
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: filtered.length,
       itemBuilder: (ctx, i) {
         final item = filtered[i];
         return GestureDetector(
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReportDetailPage())),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => ReportDetailPage(laporan: item))
+          ),
           child: Container(
             margin: const EdgeInsets.only(bottom: 16),
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)]),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)]
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -280,19 +279,19 @@ class LaporankuFragment extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(color: Colors.blue[50], borderRadius: BorderRadius.circular(4)),
-                      child: Text(item['cat'] as String, style: const TextStyle(color: Colors.blue, fontSize: 10)),
+                      child: Text(item.kategori, style: const TextStyle(color: Colors.blue, fontSize: 10)),
                     ),
-                    Text("12 Mar 2024", style: TextStyle(color: Colors.grey[400], fontSize: 10)),
+                    Text(item.tanggal, style: TextStyle(color: Colors.grey[400], fontSize: 10)),
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text(item['title'] as String, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                Text(item.judul, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(Icons.circle, size: 10, color: item['color'] as Color),
+                    Icon(Icons.circle, size: 10, color: item.statusColor),
                     const SizedBox(width: 5),
-                    Text(item['status'] as String, style: TextStyle(color: item['color'] as Color, fontWeight: FontWeight.bold, fontSize: 12)),
+                    Text(item.status, style: TextStyle(color: item.statusColor, fontWeight: FontWeight.bold, fontSize: 12)),
                   ],
                 )
               ],
@@ -313,15 +312,14 @@ class NotificationFragment extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Notifikasi"),
-        // 🚨 TAMBAHKAN INI JUGA 🚨
-        automaticallyImplyLeading: false, 
+        automaticallyImplyLeading: false,
       ),
       body: ListView.separated(
         itemCount: 5,
         separatorBuilder: (_, _) => const Divider(height: 1),
         itemBuilder: (ctx, i) {
           return ListTile(
-            tileColor: i == 0 ? Colors.blue[50] : Colors.white, 
+            tileColor: i == 0 ? Colors.blue[50] : Colors.white,
             leading: CircleAvatar(
               backgroundColor: Colors.blue[100],
               child: const Icon(Icons.notifications, color: Colors.blue),
@@ -345,8 +343,7 @@ class AccountFragment extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Akun Saya"),
-        // 🚨 TAMBAHKAN INI JUGA 🚨
-        automaticallyImplyLeading: false, 
+        automaticallyImplyLeading: false,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -357,12 +354,26 @@ class AccountFragment extends StatelessWidget {
             const Text("Rahmat Hidayat", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const Text("rahmat.hidayat@email.com", style: TextStyle(color: Colors.grey)),
             const SizedBox(height: 30),
-            _menuItem(context, icon: Icons.person_outline, title: "Edit Profil", onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EditProfilePage()))),
-            _menuItem(context, icon: Icons.lock_outline, title: "Ganti Kata Sandi"),
-            _menuItem(context, icon: Icons.settings_outlined, title: "Pengaturan"),
-            _menuItem(context, icon: Icons.help_outline, title: "Pusat Bantuan"),
+            
+            // Menu Item disesuaikan dengan permintaan sebelumnya
+            _menuItem(context, icon: Icons.person_outline, title: "Edit Profil", onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const EditProfilePage()));
+            }),
+            _menuItem(context, icon: Icons.info_outline, title: "Tentang Aplikasi", onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => Placeholder()));
+            }),
+            _menuItem(context, icon: Icons.privacy_tip_outlined, title: "Kebijakan Privasi", onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => Placeholder()));
+            }),
+            _menuItem(context, icon: Icons.description_outlined, title: "Syarat dan Ketentuan", onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => Placeholder()));
+            }),
+
             const Divider(),
-            _menuItem(context, icon: Icons.logout, title: "Keluar", color: Colors.red, onTap: () => Navigator.pushReplacementNamed(context, '/login')),
+            
+            _menuItem(context, icon: Icons.logout, title: "Keluar", color: Colors.red, onTap: () {
+              Navigator.pushReplacementNamed(context, '/login');
+            }),
           ],
         ),
       ),

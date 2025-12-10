@@ -535,7 +535,7 @@ class ReviewReportPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Icon(Icons.edit, size: 18, color: Color(0xFF0055D4)),
+                const Icon(Icons.lock_outline, size: 20, color: Colors.grey),
               ],
             ),
           ),
