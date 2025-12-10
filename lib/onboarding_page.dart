@@ -56,7 +56,7 @@ class OnboardingPage extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.all(20.0),
                   child: Image.asset(
-                    "logo.png",   // ganti nama file gambar kamu
+                    "logo.png",
                     fit: BoxFit.contain,
                   ),
                 ),
@@ -65,7 +65,7 @@ class OnboardingPage extends StatelessWidget {
 
             const SizedBox(height: 40.0),
             const Text(
-              'Suara Ta Didengar\nMasalah Ta Ditindak',
+              "Suara Ta' Didengar\nMasalah Ta' Ditindak",
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 25.0,
