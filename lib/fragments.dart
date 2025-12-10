@@ -47,7 +47,7 @@ class _HomeFragmentState extends State<HomeFragment> {
           kategori: data['kategori'] ?? 'Lainnya',
           jenis: data['jenis'] ?? 'Publik',
           pelapor: data['pelapor'] ?? '-',
-          status: data['status'] ?? 'Baru',
+          status: data['status'] ?? 'Menunggu',
           tanggal: _formatDate(data['createdAt'], data['tanggal']),
           statusColor: _getStatusColor(data['status']),
           imagePath: data['imagePath'] ?? data['foto'] ?? 'assets/images/placeholder.png',
