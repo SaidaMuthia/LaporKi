@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:laporki/user/user_dashboard.dart';
-import 'package:laporki/admin/admin_dashboard.dart';
 
 // --- ONBOARDING PAGE ---
 class OnboardingPage extends StatelessWidget {

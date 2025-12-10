@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-// import 'package:laporki/admin/laporan_admin_page.dart';
 import 'package:laporki/admin/laporan_model.dart';
 import 'package:laporki/admin/detail_laporan_screen.dart';
+// 1. Import halaman profil (Tentang, Privasi, Syarat)
+import 'package:laporki/profile_pages.dart'; 
 
 // --- 2. ADMIN HOME PAGE (KONTEN BERANDA) ---
 
@@ -13,17 +14,16 @@ class AdminHomePage extends StatelessWidget {
     // Ambil 4 laporan terbaru untuk tampilan beranda
     final List<Laporan> latestLaporan = laporanList.take(4).toList();
     
-    // UBAH STRUKTUR DISINI: Gunakan CustomScrollView agar bisa pakai SliverAppBar
     return CustomScrollView(
       slivers: [
         // --- 1. BAGIAN APP BAR (HEADER) ---
         SliverAppBar(
-          pinned: true, // Agar header tetap nempel saat discroll
+          pinned: true, 
           toolbarHeight: 90, 
           backgroundColor: Colors.white, 
           elevation: 0,
           centerTitle: false,
-          automaticallyImplyLeading: false, // Hilangkan tombol back
+          automaticallyImplyLeading: false, 
 
           title: const Padding(
             padding: EdgeInsets.only(top: 10.0),
@@ -35,7 +35,7 @@ class AdminHomePage extends StatelessWidget {
                   style: TextStyle(color: Colors.grey, fontSize: 16)
                 ), 
                 Text(
-                  "Admin Kota!", // Teks khusus Admin
+                  "Admin Kota!", 
                   style: TextStyle(
                     color: Colors.black, 
                     fontSize: 24, 
@@ -54,7 +54,6 @@ class AdminHomePage extends StatelessWidget {
                   color: Theme.of(context).primaryColor, 
                   shape: BoxShape.circle,
                 ),
-                // Ikon diganti 'location_city' biar sedikit beda nuansa adminnya
                 child: const Icon(Icons.location_city, color: Colors.white, size: 24),
               ),
             ),
@@ -70,9 +69,6 @@ class AdminHomePage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    // Tidak perlu SizedBox di awal karena toolbarHeight sudah tinggi
-                    
-                    // Ringkasan Laporan Hari Ini (SummaryCard)
                     const SummaryCard(),
                     
                     const SizedBox(height: 25),
@@ -88,8 +84,8 @@ class AdminHomePage extends StatelessWidget {
                     
                     // Daftar Laporan
                     ListView.builder(
-                      shrinkWrap: true, // Wajib ada karena di dalam ScrollView
-                      physics: const NeverScrollableScrollPhysics(), // Scroll ikut induknya
+                      shrinkWrap: true, 
+                      physics: const NeverScrollableScrollPhysics(), 
                       itemCount: latestLaporan.length,
                       itemBuilder: (context, index) {
                         return LaporanListItem(laporan: latestLaporan[index]);
@@ -107,7 +103,7 @@ class AdminHomePage extends StatelessWidget {
   }
 }
 
-// --- 3. KOMPONEN LAINNYA (TETAP SAMA SEPERTI SEBELUMNYA) ---
+// --- 3. KOMPONEN LAINNYA ---
 
 class SummaryCard extends StatelessWidget {
   const SummaryCard({super.key});
@@ -227,7 +223,6 @@ class LaporanAdminPage extends StatefulWidget {
 }
 
 class _LaporanAdminPageState extends State<LaporanAdminPage> {
-  // State untuk mengontrol tampilan pop-up filter
   bool _showFilter = false;
 
   void _toggleFilter() {
@@ -244,10 +239,10 @@ class _LaporanAdminPageState extends State<LaporanAdminPage> {
           'Laporan',
           style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
+        automaticallyImplyLeading: false, // Hilangkan tombol back
       ),
-      body: Stack( // Gunakan Stack agar Pop-up filter bisa muncul di atas konten lain
+      body: Stack(
         children: [
-          // Konten Utama (Search Bar dan List Laporan)
           Column(
             children: [
               Padding(
@@ -265,10 +260,9 @@ class _LaporanAdminPageState extends State<LaporanAdminPage> {
             ],
           ),
 
-          // Pop-up Filter (Hanya ditampilkan jika _showFilter = true)
           if (_showFilter)
             Positioned(
-              top: 70, // Sesuaikan posisi di bawah search bar
+              top: 70, 
               right: 16,
               left: 16,
               child: FilterPopupCard(
@@ -314,7 +308,7 @@ class SearchAndFilterBar extends StatelessWidget {
           ),
           IconButton(
             icon: Icon(Icons.filter_list, color: Theme.of(context).primaryColor),
-            onPressed: onFilterPressed, // Panggil fungsi toggle filter
+            onPressed: onFilterPressed, 
           ),
         ],
       ),
@@ -348,8 +342,8 @@ class FilterPopupCard extends StatelessWidget {
             const Divider(),
             
             // Filter Dropdowns
-            Row(
-              children: const [
+            const Row(
+              children: [
                 Expanded(child: FilterDropdown(label: 'Kategori')),
                 SizedBox(width: 10),
                 Expanded(child: FilterDropdown(label: 'Status')),
@@ -358,12 +352,11 @@ class FilterPopupCard extends StatelessWidget {
             const SizedBox(height: 15),
 
             // Filter Tanggal
-            Row(
+            const Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: FilterTanggal(label: 'Tanggal'),
                 ),
-                // Tombol kalender berada di dalam FilterTanggal
               ],
             ),
             const SizedBox(height: 20),
@@ -371,8 +364,7 @@ class FilterPopupCard extends StatelessWidget {
             // Tombol Bersihkan Filter
             TextButton(
               onPressed: () {
-                // Logika bersihkan filter
-                onClose(); // Tutup pop-up setelah dibersihkan
+                onClose(); 
               },
               child: const Text('Bersihkan Filter', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
@@ -438,7 +430,7 @@ class FilterTanggal extends StatelessWidget {
 }
 
 // ===============================================
-// Laporan List Item (Disalin dari admin_dashboard.dart, sedikit dimodifikasi)
+// Laporan List Item
 // ===============================================
 class LaporanListItem extends StatelessWidget {
   final Laporan laporan;
@@ -566,7 +558,7 @@ class LaporanListItem extends StatelessWidget {
 }
 
 
-// --- NOTIFICATION FRAGMENT (SAMA PERSIS DENGAN USER) ---
+// --- NOTIFICATION FRAGMENT ---
 class NotificationFragment extends StatelessWidget {
   const NotificationFragment({super.key});
 
@@ -597,7 +589,7 @@ class NotificationFragment extends StatelessWidget {
   }
 }
 
-// --- ACCOUNT FRAGMENT (SAMA PERSIS DENGAN USER) ---
+// --- ACCOUNT FRAGMENT (UPDATED FOR ADMIN) ---
 class AccountFragment extends StatelessWidget {
   const AccountFragment({super.key});
 
@@ -617,10 +609,24 @@ class AccountFragment extends StatelessWidget {
             const Text("Admin Utama", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const Text("admin@laporki.go.id", style: TextStyle(color: Colors.grey)),
             const SizedBox(height: 30),
-            _menuItem(context, icon: Icons.person_outline, title: "Edit Profil"),
-            _menuItem(context, icon: Icons.lock_outline, title: "Ganti Kata Sandi"),
-            _menuItem(context, icon: Icons.settings_outlined, title: "Pengaturan Sistem"),
+            
+            // --- MENU ITEM DISESUAIKAN UNTUK ADMIN ---
+            // Mengarah ke halaman yang sama dengan User untuk konsistensi konten
+            _menuItem(context, icon: Icons.person_outline, title: "Edit Profil", onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const EditProfilePage()));
+            }),
+            _menuItem(context, icon: Icons.info_outline, title: "Tentang Aplikasi", onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const TentangAplikasiPage()));
+            }),
+            _menuItem(context, icon: Icons.privacy_tip_outlined, title: "Kebijakan Privasi", onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const KebijakanPrivasiPage()));
+            }),
+            _menuItem(context, icon: Icons.description_outlined, title: "Syarat dan Ketentuan", onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const SyaratKetentuanPage()));
+            }),
+            
             const Divider(),
+            
             _menuItem(context, icon: Icons.logout, title: "Keluar", color: Colors.red, onTap: () {
                Navigator.pushReplacementNamed(context, '/login'); 
             }),
