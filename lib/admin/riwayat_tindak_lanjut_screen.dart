@@ -9,7 +9,7 @@ class RiwayatTindakLanjutScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Ambil data status & tanggal dari laporan
-    final String status = laporan?.status ?? 'Baru';
+    final String status = laporan?.status ?? 'Menunggu';
     final String tanggalLapor = laporan?.tanggal ?? '-';
 
     // --- LOGIKA TIMELINE ---

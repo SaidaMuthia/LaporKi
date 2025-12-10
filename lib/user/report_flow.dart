@@ -380,36 +380,6 @@ class _SetLocationPageState extends State<SetLocationPage> {
           children: [
             const Text("Lokasi Laporan", style: TextStyle(fontWeight: FontWeight.w500)),
             const SizedBox(height: 8),
-            // ... (Kode sebelumnya: Text "Lokasi Laporan") ...
-            
-            // 1. Tombol Deteksi GPS Otomatis
-            InkWell(
-              onTap: _getCurrentLocation,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50, // Pembeda warna
-                  border: Border.all(color: const Color(0xFF0055D4)),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.my_location, color: Color(0xFF0055D4)),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _loading
-                          ? const Text("Mendeteksi...", style: TextStyle(color: Colors.grey))
-                          : Text(_address ?? "Gunakan GPS Saat Ini", style: TextStyle(color: const Color(0xFF0055D4), fontWeight: FontWeight.bold)),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            
-            const SizedBox(height: 10),
-            const Center(child: Text("Atau", style: TextStyle(color: Colors.grey))),
-            const SizedBox(height: 10),
-
             // 2. Tombol Pilih Lewat Peta (BARU)
             InkWell(
               onTap: () async {
@@ -668,7 +638,7 @@ class _ReviewReportPageState extends State<ReviewReportPage> {
         kategori: widget.draft.kategori ?? '',
         jenis: widget.draft.jenis ?? '',
         pelapor: pelapor,
-        status: 'Baru',
+        status: 'Menunggu',
         tanggal: DateTime.now().toString().substring(0, 10), // Format tanggal sederhana
         statusColor: const Color(0xFF005AC2), // Warna status 'Baru'
         imagePath: imageUrl ?? (widget.draft.imageFile?.path ?? 'assets/images/placeholder.png'),

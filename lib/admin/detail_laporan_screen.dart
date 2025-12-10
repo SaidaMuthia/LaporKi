@@ -18,7 +18,7 @@ class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
   bool _isLoading = false; // Untuk loading saat simpan
 
   // Status opsi (Pastikan stringnya sama persis dengan yang dipakai di filter)
-  final List<String> _statusOptions = ['Baru', 'Diproses', 'Selesai', 'Ditolak'];
+  final List<String> _statusOptions = ['Menunggu', 'Diproses', 'Selesai', 'Ditolak'];
 
   @override
   void initState() {

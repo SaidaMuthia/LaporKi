@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Tambahan untuk Auth
 import 'package:intl/intl.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+// Pastikan path import ini sesuai dengan project Anda
 import 'package:laporki/admin/laporan_model.dart';
 import 'package:laporki/admin/detail_laporan_screen.dart';
 import 'package:laporki/profile_pages.dart'; 
 
-// --- 1. ADMIN HOME PAGE (KONTEN BERANDA) ---
+// ===============================================
+// 1. ADMIN HOME FRAGMENT (DASHBOARD)
+// ===============================================
 class AdminHomePage extends StatelessWidget {
   final Map<String, dynamic>? userData;
   const AdminHomePage({super.key, this.userData});
 
   @override
   Widget build(BuildContext context) {
-    // Gunakan Stream agar Nama di Header juga update real-time
+    // Stream User Data untuk Nama di Header
     final user = FirebaseAuth.instance.currentUser;
     
     return StreamBuilder<DocumentSnapshot>(
@@ -21,9 +24,11 @@ class AdminHomePage extends StatelessWidget {
       builder: (context, userSnapshot) {
         String nama = userData?['nama_lengkap'] ?? 'Admin';
         if (userSnapshot.hasData && userSnapshot.data!.exists) {
-          nama = userSnapshot.data!.get('nama_lengkap') ?? nama;
+          final data = userSnapshot.data!.data() as Map<String, dynamic>;
+          nama = data['nama_lengkap'] ?? nama;
         }
 
+        // Stream Laporan Utama
         return StreamBuilder<QuerySnapshot>(
           stream: FirebaseFirestore.instance.collection('laporan').orderBy('createdAt', descending: true).snapshots(),
           builder: (context, snapshot) {
@@ -38,6 +43,7 @@ class AdminHomePage extends StatelessWidget {
 
             return CustomScrollView(
               slivers: [
+                // Header / AppBar
                 SliverAppBar(
                   pinned: true,
                   toolbarHeight: 80,
@@ -66,6 +72,7 @@ class AdminHomePage extends StatelessWidget {
                   ],
                 ),
 
+                // Konten Dashboard
                 SliverList(
                   delegate: SliverChildListDelegate([
                     Padding(
@@ -83,7 +90,7 @@ class AdminHomePage extends StatelessWidget {
                               const Text("Laporan Terbaru", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                               if (laporanList.isNotEmpty)
                                 TextButton(onPressed: (){
-                                  // Opsional: Pindah ke Tab Laporan
+                                  // Navigasi opsional ke tab laporan (jika pakai Controller tab)
                                 }, child: const Text("Lihat Semua")),
                             ],
                           ),
@@ -111,7 +118,9 @@ class AdminHomePage extends StatelessWidget {
   }
 }
 
-// --- 2. LAPORAN ADMIN PAGE ---
+// ===============================================
+// 2. LAPORAN ADMIN FRAGMENT (FILTER)
+// ===============================================
 class LaporanAdminPage extends StatefulWidget {
   const LaporanAdminPage({super.key});
 
@@ -147,7 +156,7 @@ class _LaporanAdminPageState extends State<LaporanAdminPage> {
             labelStyle: TextStyle(fontWeight: FontWeight.bold),
             tabs: [
               Tab(text: "Semua"),
-              Tab(text: "Menunggu"),
+              Tab(text: "Baru"),
               Tab(text: "Diproses"),
               Tab(text: "Selesai"),
             ],
@@ -158,13 +167,13 @@ class _LaporanAdminPageState extends State<LaporanAdminPage> {
             TabBarView(
               children: [
                 _LaporanListStream(filterStatus: null, searchQuery: _searchQuery),
-                _LaporanListStream(filterStatus: 'Menunggu', searchQuery: _searchQuery),
+                _LaporanListStream(filterStatus: 'Baru', searchQuery: _searchQuery),
                 _LaporanListStream(filterStatus: 'Diproses', searchQuery: _searchQuery),
                 _LaporanListStream(filterStatus: 'Selesai', searchQuery: _searchQuery),
               ],
             ),
             
-            // Search Bar Floating di atas list
+            // Search Bar
             Positioned(
               top: 10, left: 16, right: 16,
               child: SearchAndFilterBar(
@@ -192,7 +201,8 @@ class _LaporanListStream extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Query query = FirebaseFirestore.instance.collection('laporan').orderBy('createdAt', descending: true);
+    // TIPS: Gunakan order manual jika query complex belum diindex
+    Query query = FirebaseFirestore.instance.collection('laporan');
     if (filterStatus != null) {
       query = query.where('status', isEqualTo: filterStatus);
     }
@@ -207,20 +217,32 @@ class _LaporanListStream extends StatelessWidget {
           return _buildEmptyState("Tidak ada data laporan.");
         }
 
-        // Filter Lokal untuk Search
-        final docs = snapshot.data!.docs.where((doc) {
+        // 1. Ambil Data
+        var docs = snapshot.data!.docs;
+
+        // 2. Sorting Manual (CreatedAt Descending)
+        // Ini menghindari error "Missing Index" di Firestore
+        docs.sort((a, b) {
+          final t1 = a['createdAt'] as Timestamp?;
+          final t2 = b['createdAt'] as Timestamp?;
+          if (t1 == null || t2 == null) return 0;
+          return t2.compareTo(t1); // Descending (Terbaru di atas)
+        });
+
+        // 3. Filter Search (Lokal)
+        final filteredDocs = docs.where((doc) {
           final data = doc.data() as Map<String, dynamic>;
           final judul = (data['judul'] ?? '').toString().toLowerCase();
           return judul.contains(searchQuery);
         }).toList();
 
-        if (docs.isEmpty) return _buildEmptyState("Laporan tidak ditemukan.");
+        if (filteredDocs.isEmpty) return _buildEmptyState("Laporan tidak ditemukan.");
 
         return ListView.builder(
-          padding: const EdgeInsets.only(top: 70, left: 16, right: 16, bottom: 16), // Top padding untuk search bar
-          itemCount: docs.length,
+          padding: const EdgeInsets.only(top: 70, left: 16, right: 16, bottom: 16),
+          itemCount: filteredDocs.length,
           itemBuilder: (ctx, i) {
-            final doc = docs[i];
+            final doc = filteredDocs[i];
             final laporan = _mapToLaporan(doc.id, doc.data() as Map<String, dynamic>);
             return _buildLaporanItem(context, laporan);
           },
@@ -230,7 +252,9 @@ class _LaporanListStream extends StatelessWidget {
   }
 }
 
-// --- 3. NOTIFICATION FRAGMENT ---
+// ===============================================
+// 3. NOTIFICATION FRAGMENT (PERBAIKAN FITUR)
+// ===============================================
 class NotificationFragment extends StatelessWidget {
   const NotificationFragment({super.key});
 
@@ -238,29 +262,60 @@ class NotificationFragment extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Notifikasi"),
+        title: const Text("Notifikasi Laporan Masuk"),
         automaticallyImplyLeading: false,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
       ),
       body: StreamBuilder<QuerySnapshot>(
+        // PERBAIKAN: Hapus orderBy di query ini untuk menghindari error Index.
+        // Kita hanya filter status 'Baru', lalu sort manual di bawah.
         stream: FirebaseFirestore.instance
             .collection('laporan')
-            .where('status', isEqualTo: 'Menunggu')
-            .orderBy('createdAt', descending: true)
+            .where('status', isEqualTo: 'Baru') 
             .snapshots(),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) return _buildEmptyState("Tidak ada notifikasi baru.");
+          // Handle Loading
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          
+          // Handle Kosong
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return _buildEmptyState("Tidak ada laporan baru.");
+          }
+
+          // Handle Data & Sorting Manual
+          final docs = snapshot.data!.docs;
+          docs.sort((a, b) {
+             // Sorting berdasarkan createdAt (Terbaru di atas)
+             final t1 = a['createdAt'] as Timestamp?;
+             final t2 = b['createdAt'] as Timestamp?;
+             if (t1 == null && t2 == null) return 0;
+             if (t1 == null) return 1; 
+             if (t2 == null) return -1;
+             return t2.compareTo(t1); 
+          });
 
           return ListView.separated(
             padding: const EdgeInsets.all(16),
-            itemCount: snapshot.data!.docs.length,
+            itemCount: docs.length,
             separatorBuilder: (_, __) => const SizedBox(height: 10),
             itemBuilder: (ctx, i) {
-              final doc = snapshot.data!.docs[i];
-              final laporan = _mapToLaporan(doc.id, doc.data() as Map<String, dynamic>);
+              final doc = docs[i];
+              final data = doc.data() as Map<String, dynamic>;
+              final laporan = _mapToLaporan(doc.id, data);
+
+              // Helper Time Ago
+              String timeStr = "Baru saja";
+              if (data['createdAt'] != null) {
+                 final dt = (data['createdAt'] as Timestamp).toDate();
+                 final diff = DateTime.now().difference(dt);
+                 if (diff.inMinutes < 60) timeStr = "${diff.inMinutes}m lalu";
+                 else if (diff.inHours < 24) timeStr = "${diff.inHours}j lalu";
+                 else timeStr = DateFormat('dd MMM').format(dt);
+              }
 
               return InkWell(
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => DetailLaporanScreen(laporan: laporan))),
@@ -270,6 +325,9 @@ class NotificationFragment extends StatelessWidget {
                     color: Colors.blue.shade50,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: Colors.blue.shade100),
+                    boxShadow: [
+                      BoxShadow(color: Colors.blue.withOpacity(0.05), blurRadius: 5, offset: const Offset(0, 3))
+                    ]
                   ),
                   child: Row(
                     children: [
@@ -287,7 +345,7 @@ class NotificationFragment extends StatelessWidget {
                             const SizedBox(height: 4),
                             Text("${laporan.judul} - ${laporan.kategori}", maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.grey[700], fontSize: 12)),
                             const SizedBox(height: 4),
-                            Text(laporan.tanggal, style: TextStyle(fontSize: 10, color: Colors.grey[500])),
+                            Text(timeStr, style: TextStyle(fontSize: 10, color: Colors.grey[500])),
                           ],
                         ),
                       ),
@@ -304,7 +362,9 @@ class NotificationFragment extends StatelessWidget {
   }
 }
 
-// --- 4. ACCOUNT FRAGMENT (SINKRONISASI REAL-TIME) ---
+// ===============================================
+// 4. ACCOUNT FRAGMENT
+// ===============================================
 class AccountFragment extends StatelessWidget {
   final Map<String, dynamic>? userData;
   const AccountFragment({super.key, this.userData});
@@ -313,14 +373,12 @@ class AccountFragment extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
 
-    // Gunakan StreamBuilder ke koleksi 'users' agar profil update otomatis
     return StreamBuilder<DocumentSnapshot>(
       stream: user != null ? FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots() : null,
       builder: (context, snapshot) {
         String nama = userData?['nama_lengkap'] ?? 'Admin';
         String email = user?.email ?? userData?['email'] ?? 'admin@laporki.com';
 
-        // Jika data update dari Firestore tersedia, gunakan itu
         if (snapshot.hasData && snapshot.data!.exists) {
           final data = snapshot.data!.data() as Map<String, dynamic>;
           nama = data['nama_lengkap'] ?? nama;
@@ -340,10 +398,9 @@ class AccountFragment extends StatelessWidget {
               children: [
                 const CircleAvatar(
                   radius: 50, 
-                  backgroundImage: NetworkImage("https://i.pravatar.cc/150?img=12"), // Avatar Admin
+                  backgroundImage: NetworkImage("https://i.pravatar.cc/150?img=12"), 
                 ),
                 const SizedBox(height: 15),
-                
                 Text(nama, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                 Text(email, style: const TextStyle(color: Colors.grey)),
                 
@@ -355,7 +412,6 @@ class AccountFragment extends StatelessWidget {
                 _menuItem(context, icon: Icons.description_outlined, title: "Syarat dan Ketentuan", onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SyaratKetentuanPage()))),
                 
                 const Divider(),
-                
                 _menuItem(context, icon: Icons.logout, title: "Keluar", color: Colors.red, onTap: () => Navigator.pushReplacementNamed(context, '/login')),
               ],
             ),
@@ -375,10 +431,21 @@ class AccountFragment extends StatelessWidget {
   }
 }
 
-// --- WIDGET HELPER ---
+// ===============================================
+// HELPER FUNCTIONS & WIDGETS
+// ===============================================
 
 Widget _buildEmptyState(String message) {
-  return Center(child: Text(message, style: const TextStyle(color: Colors.grey)));
+  return Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(Icons.inbox_outlined, size: 60, color: Colors.grey.shade300),
+        const SizedBox(height: 10),
+        Text(message, style: const TextStyle(color: Colors.grey)),
+      ],
+    ),
+  );
 }
 
 Widget _buildLaporanItem(BuildContext context, Laporan laporan) {
@@ -436,7 +503,7 @@ class SummaryCard extends StatelessWidget {
   const SummaryCard({super.key, required this.laporanList});
   @override
   Widget build(BuildContext context) {
-    int menunggu = laporanList.where((l) => l.status == 'Menunggu').length;
+    int baru = laporanList.where((l) => l.status == 'Baru').length;
     int diproses = laporanList.where((l) => l.status == 'Diproses').length;
     int selesai = laporanList.where((l) => l.status == 'Selesai').length;
     int ditolak = laporanList.where((l) => l.status == 'Ditolak').length;
@@ -448,7 +515,7 @@ class SummaryCard extends StatelessWidget {
         const Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.description, color: Colors.white, size: 28), SizedBox(width: 8), Text('Rangkuman', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold))]),
         const SizedBox(height: 20),
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Flexible(child: SummaryItem(count: menunggu, label: 'Menunggu', iconColor: const Color(0xFFFFCC00))),
+          Flexible(child: SummaryItem(count: baru, label: 'Baru', iconColor: const Color(0xFFFFCC00))),
           Flexible(child: SummaryItem(count: diproses, label: 'Proses', iconColor: const Color(0xFFFF9500))),
           Flexible(child: SummaryItem(count: selesai, label: 'Selesai', iconColor: Colors.green)),
           Flexible(child: SummaryItem(count: ditolak, label: 'Ditolak', iconColor: Colors.red)),
@@ -480,7 +547,7 @@ class SearchAndFilterBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.grey.shade300)),
       child: Row(children: [
-        Expanded(child: TextField(onChanged: onSearchChanged, decoration: const InputDecoration(hintText: 'Cari ID atau Judul Laporan', border: InputBorder.none, isDense: true, contentPadding: EdgeInsets.zero, prefixIcon: Icon(Icons.search, color: Colors.grey)))),
+        Expanded(child: TextField(onChanged: onSearchChanged, decoration: const InputDecoration(hintText: 'Cari Judul Laporan', border: InputBorder.none, isDense: true, contentPadding: EdgeInsets.zero, prefixIcon: Icon(Icons.search, color: Colors.grey)))),
         IconButton(icon: Icon(Icons.filter_list, color: Theme.of(context).primaryColor), onPressed: onFilterPressed)
       ]),
     );
@@ -504,5 +571,19 @@ class FilterPopupCard extends StatelessWidget {
 Laporan _mapToLaporan(String id, Map<String, dynamic> data) {
   String formatDate(dynamic val) { if (val is Timestamp) return DateFormat('dd MMM yyyy').format(val.toDate()); return val?.toString() ?? '-'; }
   Color getStatusColor(String? status) { if (status == 'Selesai') return Colors.green; if (status == 'Ditolak') return Colors.red; if (status == 'Diproses') return Colors.blue; return Colors.orange; }
-  return Laporan(id: id, judul: data['judul'] ?? 'Tanpa Judul', lokasi: data['lokasi'] ?? '-', detailLokasi: data['detailLokasi'] ?? '-', deskripsi: data['deskripsi'] ?? '-', kategori: data['kategori'] ?? 'Lainnya', jenis: data['jenis'] ?? 'Publik', pelapor: data['pelapor'] ?? '-', status: data['status'] ?? 'Menunggu', tanggal: formatDate(data['createdAt'] ?? data['tanggal']), statusColor: getStatusColor(data['status']), imagePath: data['imagePath'] ?? data['foto'] ?? 'assets/images/placeholder.png');
-}
+  return Laporan(
+    id: id,
+    judul: data['judul'] ?? 'Tanpa Judul',
+    lokasi: data['lokasi'] ?? '-',
+    detailLokasi: data['detailLokasi'] ?? '-',
+    deskripsi: data['deskripsi'] ?? '-',
+    kategori: data['kategori'] ?? 'Lainnya',
+    jenis: data['jenis'] ?? 'Publik',
+    pelapor: data['pelapor'] ?? '-',
+    status: data['status'] ?? 'Baru',
+    tanggal: formatDate(data['createdAt'] ?? data['tanggal']),
+    statusColor: getStatusColor(data['status']),
+    imagePath: data['imagePath'] ?? data['foto'] ?? 'assets/images/placeholder.png',
+    createdAt: data['createdAt'] as Timestamp?, // Mengisi field timestamp
+  );
+} 

@@ -84,7 +84,7 @@ class Laporan {
       kategori: data['kategori'] ?? 'Lainnya',
       jenis: data['jenis'] ?? 'Publik',
       pelapor: data['pelapor'] ?? '-',
-      status: data['status'] ?? 'Baru',
+      status: data['status'] ?? 'Menunggu',
       tanggal: formatTanggal(data['createdAt'] ?? data['tanggal']),
       statusColor: getStatusColor(data['status']),
       imagePath: data['imagePath'] ?? data['foto'] ?? 'assets/images/placeholder.png',
