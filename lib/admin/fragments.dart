@@ -92,7 +92,7 @@ class AdminHomePage extends StatelessWidget {
                       physics: const NeverScrollableScrollPhysics(), // Scroll ikut induknya
                       itemCount: latestLaporan.length,
                       itemBuilder: (context, index) {
-                        return LaporanAdminFragment(laporan: latestLaporan[index]);
+                        return LaporanListItem(laporan: latestLaporan[index]);
                       },
                     ),
                     const SizedBox(height: 80),
@@ -258,7 +258,7 @@ class _LaporanAdminPageState extends State<LaporanAdminPage> {
                 child: ListView.builder(
                   itemCount: laporanList.length,
                   itemBuilder: (context, index) {
-                    return LaporanAdminFragment(laporan: laporanList[index]);
+                    return LaporanListItem(laporan: laporanList[index]);
                   },
                 ),
               ),
@@ -440,10 +440,10 @@ class FilterTanggal extends StatelessWidget {
 // ===============================================
 // Laporan List Item (Disalin dari admin_dashboard.dart, sedikit dimodifikasi)
 // ===============================================
-class LaporanAdminFragment extends StatelessWidget {
+class LaporanListItem extends StatelessWidget {
   final Laporan laporan;
   
-  const LaporanAdminFragment({super.key, required this.laporan});
+  const LaporanListItem({super.key, required this.laporan});
 
   Widget _buildCategoryBadge(String kategori, BuildContext context) {
     return Container(

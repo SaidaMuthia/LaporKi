@@ -28,6 +28,8 @@ class _LaporanAdminPageState extends State<LaporanAdminPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
+
         title: const Text(
           'Laporan',
           style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
