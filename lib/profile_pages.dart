@@ -42,7 +42,7 @@ class EditProfilePage extends StatelessWidget {
             _buildField("Nama Lengkap", "Rahmat Hidayat"),
             _buildField("Email", "rahmat.hidayat@email.com"),
             _buildField("Nomor Telepon", "081234567890"),
-            _buildField("Alamat", "Jl. Perintis Kemerdekaan No. 10"),
+            _buildField("NIK", "1234567890123456"),
             const SizedBox(height: 30),
             SizedBox(
               width: double.infinity,

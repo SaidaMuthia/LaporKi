@@ -1,5 +1,6 @@
-import 'controllers/auth_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Tambahkan ini
+import 'package:cloud_firestore/cloud_firestore.dart'; // Tambahkan ini
 import 'login_page.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -10,6 +11,7 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
+  // Controller
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _nikController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
@@ -22,6 +24,7 @@ class _RegisterPageState extends State<RegisterPage> {
   bool _rememberMe = false;
   bool _isLoading = false;
 
+  // --- LOGIKA REGISTER YANG DIPERBAIKI ---
   Future<void> registerUser() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -48,9 +51,17 @@ class _RegisterPageState extends State<RegisterPage> {
       } catch (_) {}
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Registrasi berhasil')));
+      
+      // Pindah ke Login
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginPage()));
+
+    } on FirebaseAuthException catch (e) {
+      String message = "Terjadi kesalahan";
+      if (e.code == 'email-already-in-use') message = "Email sudah terdaftar";
+      if (e.code == 'weak-password') message = "Password terlalu lemah";
+      
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
     } catch (e) {
-      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -99,7 +110,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
                 const SizedBox(height: 20),
 
-                // TAB SWITCH
+                // TAB SWITCH (Desain tetap sama)
                 Container(
                   height: 50,
                   decoration: BoxDecoration(
@@ -240,6 +251,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
                 const SizedBox(height: 10),
 
+                // CHECKBOX & LUPA PASSWORD
                 Row(
                   children: [
                     Checkbox(
