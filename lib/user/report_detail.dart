@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:laporki/admin/laporan_model.dart'; // Import Model
-import 'package:laporki/admin/riwayat_tindak_lanjut_screen.dart'; // Import Riwayat
-import 'package:laporki/admin/lihat_gambar_screen.dart'; // Import Lihat Gambar
+import 'package:intl/intl.dart';
+// Pastikan path import model ini benar
+import 'package:laporki/admin/laporan_model.dart'; 
+import 'package:laporki/admin/riwayat_tindak_lanjut_screen.dart';
+import 'package:laporki/admin/lihat_gambar_screen.dart';
 
 class ReportDetailPage extends StatelessWidget {
-  final Laporan laporan; // Menerima data laporan
+  // 1. KEMBALIKAN KE MODEL: Terima objek Laporan
+  final Laporan laporan;
 
   const ReportDetailPage({super.key, required this.laporan});
 
-  // Fungsi navigasi ke layar gambar penuh (Sama seperti Admin)
+  // Fungsi navigasi ke layar gambar penuh
   void _viewFullImage(BuildContext context) {
     Navigator.push(
       context,
@@ -18,17 +21,18 @@ class ReportDetailPage extends StatelessWidget {
     );
   }
 
-  // Fungsi navigasi ke Riwayat (Aksi tombol bawah)
+  // Fungsi navigasi ke Riwayat
   void _goToHistory(BuildContext context) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => const RiwayatTindakLanjutScreen(),
+        // KITA KIRIM DATA LAPORAN KE SINI
+        builder: (context) => RiwayatTindakLanjutScreen(laporan: laporan),
       ),
     );
   }
 
-  // Helper: Widget untuk Detail Info (Sama persis dengan desain Admin)
+  // Helper: Widget untuk Detail Info
   Widget _buildDetailInfo(String title, String content, {bool isLocked = true}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 20.0),
@@ -63,6 +67,26 @@ class ReportDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Logika gambar (Network vs Asset)
+    Widget imageWidget;
+    if (laporan.imagePath.startsWith('http')) {
+       imageWidget = Image.network(
+          laporan.imagePath,
+          width: double.infinity,
+          height: 250,
+          fit: BoxFit.cover,
+          errorBuilder: (ctx, err, stack) => Container(height: 250, color: Colors.grey[300], child: const Icon(Icons.broken_image)),
+       );
+    } else {
+       imageWidget = Image.asset(
+          laporan.imagePath,
+          width: double.infinity,
+          height: 250,
+          fit: BoxFit.cover,
+          errorBuilder: (ctx, err, stack) => Container(height: 250, color: Colors.grey[300], child: const Icon(Icons.image)),
+       );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Detail Laporan'),
@@ -79,28 +103,17 @@ class ReportDetailPage extends StatelessWidget {
         ],
       ),
       body: SingleChildScrollView(
-        // Padding bottom agar konten tidak tertutup tombol floating di bawah
         padding: const EdgeInsets.only(bottom: 100), 
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. Gambar Laporan (Desain Sama)
+            // 1. Gambar Laporan
             GestureDetector(
               onTap: () => _viewFullImage(context),
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  Image.asset(
-                    laporan.imagePath,
-                    width: double.infinity,
-                    height: 250,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      height: 250,
-                      color: Colors.grey[300],
-                      child: const Center(child: Icon(Icons.broken_image, size: 50, color: Colors.grey)),
-                    ),
-                  ),
+                  imageWidget,
                   const Icon(Icons.zoom_out_map, size: 50, color: Colors.white70),
                 ],
               ),
@@ -134,15 +147,13 @@ class ReportDetailPage extends StatelessWidget {
                   const Text('DETAIL LAPORAN', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                   const Divider(height: 30),
 
-                  // Informasi Laporan (Read Only)
+                  // Informasi Laporan
                   _buildDetailInfo('Judul Laporan', laporan.judul),
                   _buildDetailInfo('Lokasi Laporan', laporan.lokasi),
                   _buildDetailInfo('Detail Lokasi', laporan.detailLokasi),
                   _buildDetailInfo('Deskripsi Laporan', laporan.deskripsi),
                   _buildDetailInfo('Kategori Laporan', laporan.kategori),
                   _buildDetailInfo('Jenis Laporan', laporan.jenis),
-                  
-                  // Tidak ada dropdown status & input catatan karena ini User
                 ],
               ),
             ),
@@ -150,7 +161,7 @@ class ReportDetailPage extends StatelessWidget {
         ),
       ),
       
-      // 3. Tombol Bawah: LIHAT RIWAYAT (Bukan Simpan)
+      // 3. Tombol Bawah
       bottomSheet: Container(
         padding: const EdgeInsets.all(16.0),
         width: double.infinity,
@@ -167,7 +178,7 @@ class ReportDetailPage extends StatelessWidget {
         child: ElevatedButton(
           onPressed: () => _goToHistory(context),
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF005AC2), // Warna Primary
+            backgroundColor: const Color(0xFF005AC2),
             padding: const EdgeInsets.symmetric(vertical: 15),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),

@@ -5,16 +5,16 @@ class Laporan {
   final String id;
   final String judul;
   final String lokasi;
-  final String detailLokasi; 
+  final String detailLokasi;
   final String deskripsi;
   final String kategori;
-  final String jenis; 
+  final String jenis;
   final String pelapor;
   final String status;
   final String tanggal;
-  final Color statusColor; 
+  final Color statusColor;
   final String imagePath;
-  final Timestamp? createdAt; // Tambahkan untuk kompatibilitas Firestore (opsional)
+  final Timestamp? createdAt; // Field untuk sorting di Firebase
 
   Laporan({
     required this.id,
@@ -32,9 +32,7 @@ class Laporan {
     this.createdAt,
   });
 
-  // **********************************************
-  // PERBAIKAN: TAMBAHKAN METODE toMap() DI SINI
-  // **********************************************
+  // --- 1. Konversi ke Map (PENTING untuk Simpan ke Firebase) ---
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -46,88 +44,69 @@ class Laporan {
       'jenis': jenis,
       'pelapor': pelapor,
       'status': status,
-      'tanggal': tanggal, 
+      'tanggal': tanggal,
       'imagePath': imagePath,
-      // Gunakan createdAt yang sudah ada atau Timestamp.now() jika objek baru
-      'createdAt': createdAt ?? Timestamp.now(), 
-      // statusColor (Color) tidak dimasukkan karena bukan tipe data Firestore
+      // Gunakan createdAt yang ada atau buat baru (waktu sekarang)
+      'createdAt': createdAt ?? FieldValue.serverTimestamp(),
+      // statusColor TIDAK disimpan ke database karena itu logika UI
     };
+  }
+
+  // --- 2. Factory dari Map (Opsional: Mempermudah pengambilan data) ---
+  // Ini membantu agar kode di fragments.dart lebih bersih
+  factory Laporan.fromMap(String docId, Map<String, dynamic> data) {
+    // Helper format tanggal
+    String formatTanggal(dynamic val) {
+      if (val is Timestamp) {
+        // Ubah timestamp jadi string tanggal (YYYY-MM-DD) atau format lain
+        DateTime dt = val.toDate();
+        return "${dt.day}-${dt.month}-${dt.year}"; 
+      }
+      return val?.toString() ?? '-';
+    }
+
+    // Helper warna status
+    Color getStatusColor(String? status) {
+      switch (status) {
+        case 'Selesai': return Colors.green;
+        case 'Ditolak': return Colors.red;
+        case 'Diproses': return Colors.blue;
+        default: return Colors.orange; // Baru
+      }
+    }
+
+    return Laporan(
+      id: docId,
+      judul: data['judul'] ?? 'Tanpa Judul',
+      lokasi: data['lokasi'] ?? '-',
+      detailLokasi: data['detailLokasi'] ?? '-',
+      deskripsi: data['deskripsi'] ?? '-',
+      kategori: data['kategori'] ?? 'Lainnya',
+      jenis: data['jenis'] ?? 'Publik',
+      pelapor: data['pelapor'] ?? '-',
+      status: data['status'] ?? 'Baru',
+      tanggal: formatTanggal(data['createdAt'] ?? data['tanggal']),
+      statusColor: getStatusColor(data['status']),
+      imagePath: data['imagePath'] ?? data['foto'] ?? 'assets/images/placeholder.png',
+      createdAt: data['createdAt'] as Timestamp?,
+    );
   }
 }
 
-// Data Dummy Laporan
-final List<Laporan> laporanList = [
-  Laporan(
-    id: 'LP-003',
-    judul: 'Jalan Berlubang Parah di Depan SMA 8 Gowa',
-    lokasi: 'Jl. Maino No. Km. 6, Romang Lompoa, Kec. Bontomarannu, Kabupaten Gowa',
-    detailLokasi: 'Trotoar di depan Balai Kota',
-    deskripsi: 'Jalan berlubang cukup dalam di depan Toko Sinar Jaya menyebabkan kendaraan sering melambat dan hampir terjadi kecelakaan.',
-    kategori: 'Infrastruktur',
-    jenis: 'Publik',
-    pelapor: 'Ahmad S.',
-    status: 'Baru',
-    tanggal: '2025-11-14',
-    statusColor: Colors.blue.shade700,
-    imagePath: 'assets/images/jalan_rusak.png', // Ganti dengan path aset gambar Anda
-  ),
-  // ... Tambahkan data laporan lainnya jika diperlukan
-];
-
+// --- 3. Fungsi Helper Fetch (Opsional, jika dipakai di User) ---
 Future<List<Laporan>> fetchLaporanList({String? userEmail, String? status}) async {
-  // PENTING: Gunakan 'createdAt' untuk pengurutan yang aman di Firestore
   Query query = FirebaseFirestore.instance.collection('laporan').orderBy('createdAt', descending: true);
+
   if (userEmail != null) {
     query = query.where('pelapor', isEqualTo: userEmail);
   }
   if (status != null) {
     query = query.where('status', isEqualTo: status);
   }
+
   final snapshot = await query.get();
+  
   return snapshot.docs.map((doc) {
-    final data = doc.data() as Map<String, dynamic>;
-    final statusData = data['status'] ?? 'Baru';
-    final Timestamp? createdAt = data['createdAt'] as Timestamp?;
-
-    // Perbaikan: Ambil tanggal dari Timestamp dengan aman
-    String formattedDate = '';
-    if (createdAt != null) {
-      formattedDate = createdAt.toDate().toLocal().toString().substring(0, 10);
-    } else {
-      formattedDate = data['tanggal'] ?? 'N/A';
-    }
-
-    return Laporan(
-      id: data['id'] ?? doc.id,
-      judul: data['judul'] ?? '',
-      lokasi: data['lokasi'] ?? data['address'] ?? '',
-      detailLokasi: data['detailLokasi'] ?? data['detail_lokasi'] ?? '',
-      deskripsi: data['deskripsi'] ?? '',
-      kategori: data['kategori'] ?? '',
-      jenis: data['jenis'] ?? '',
-      pelapor: data['pelapor'] ?? '',
-      status: statusData,
-      tanggal: formattedDate,
-      statusColor: _getStatusColor(statusData),
-      imagePath: data['imagePath'] ?? '',
-      createdAt: createdAt,
-    );
+    return Laporan.fromMap(doc.id, doc.data() as Map<String, dynamic>);
   }).toList();
-}
-
-Color _getStatusColor(String? status) {
-  switch (status) {
-    case 'Baru': 
-    case 'Dilaporkan': 
-    case 'Menunggu': 
-      return Colors.blue.shade700;
-    case 'Diproses': 
-      return Colors.orange.shade700;
-    case 'Selesai': 
-      return Colors.green.shade700;
-    case 'Ditolak': 
-      return Colors.red.shade700;
-    default: 
-      return Colors.grey;
-  }
 }

@@ -1,222 +1,117 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Tambahan untuk Auth
+import 'package:intl/intl.dart';
 import 'package:laporki/admin/laporan_model.dart';
 import 'package:laporki/admin/detail_laporan_screen.dart';
-// 1. Import halaman profil (Tentang, Privasi, Syarat)
 import 'package:laporki/profile_pages.dart'; 
 
-// --- 2. ADMIN HOME PAGE (KONTEN BERANDA) ---
-
-class AdminHomePage extends StatefulWidget {
+// --- 1. ADMIN HOME PAGE (KONTEN BERANDA) ---
+class AdminHomePage extends StatelessWidget {
   final Map<String, dynamic>? userData;
   const AdminHomePage({super.key, this.userData});
 
   @override
-  State<AdminHomePage> createState() => _AdminHomePageState();
-}
-
-class _AdminHomePageState extends State<AdminHomePage> {
-  List<Laporan> _laporanList = [];
-  bool _loading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchLaporan();
-  }
-
-  Future<void> _fetchLaporan() async {
-    final list = await fetchLaporanList();
-    setState(() {
-      _laporanList = list;
-      _loading = false;
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final String nama = widget.userData?['nama_lengkap'] ?? 'Admin';
-    final List<Laporan> latestLaporan = _laporanList.take(4).toList();
-    return CustomScrollView(
-      slivers: [
-        // --- 1. BAGIAN APP BAR (HEADER) ---
-        SliverAppBar(
-          pinned: true, 
-          toolbarHeight: 90, 
-          backgroundColor: Colors.white, 
-          elevation: 0,
-          centerTitle: false,
-          automaticallyImplyLeading: false, 
+    // Gunakan Stream agar Nama di Header juga update real-time
+    final user = FirebaseAuth.instance.currentUser;
+    
+    return StreamBuilder<DocumentSnapshot>(
+      stream: user != null ? FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots() : null,
+      builder: (context, userSnapshot) {
+        String nama = userData?['nama_lengkap'] ?? 'Admin';
+        if (userSnapshot.hasData && userSnapshot.data!.exists) {
+          nama = userSnapshot.data!.get('nama_lengkap') ?? nama;
+        }
 
-          title: Padding(
-            padding: const EdgeInsets.only(top: 10.0),
-            child: Column( 
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  "Halo,", 
-                  style: TextStyle(color: Colors.grey, fontSize: 16)
-                ), 
-                Text(
-                  nama.isNotEmpty ? nama : "$nama!", 
-                  style: const TextStyle(
-                    color: Colors.black, 
-                    fontSize: 24, 
-                    fontWeight: FontWeight.bold
-                  )
-                ), 
-              ],
-            ),
-          ),
-          actions: [ 
-            Padding(
-              padding: const EdgeInsets.only(right: 20.0, top: 10.0), 
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor, 
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.location_city, color: Colors.white, size: 24),
-              ),
-            ),
-          ],
-        ),
+        return StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance.collection('laporan').orderBy('createdAt', descending: true).snapshots(),
+          builder: (context, snapshot) {
+            List<Laporan> laporanList = [];
+            if (snapshot.hasData) {
+              laporanList = snapshot.data!.docs.map((doc) {
+                return _mapToLaporan(doc.id, doc.data() as Map<String, dynamic>);
+              }).toList();
+            }
 
-        // --- 2. BAGIAN ISI KONTEN ---
-        SliverList(
-          delegate: SliverChildListDelegate([
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  SummaryCard(laporanList: _laporanList),
-                  const SizedBox(height: 25),
-                  const Text('Laporan Terbaru', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87)),
-                  const SizedBox(height: 15),
-                  _loading
-                      ? const Center(child: CircularProgressIndicator())
-                      : ListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: latestLaporan.length,
-                          itemBuilder: (context, index) {
-                            return LaporanListItem(laporan: latestLaporan[index]);
-                          },
+            final List<Laporan> latestLaporan = laporanList.take(5).toList();
+
+            return CustomScrollView(
+              slivers: [
+                SliverAppBar(
+                  pinned: true,
+                  toolbarHeight: 80,
+                  backgroundColor: Colors.white,
+                  elevation: 0,
+                  automaticallyImplyLeading: false,
+                  title: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text("Selamat Datang,", style: TextStyle(color: Colors.grey, fontSize: 16)),
+                      Text(nama, style: const TextStyle(color: Colors.black, fontSize: 24, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                  actions: [
+                    Padding(
+                      padding: const EdgeInsets.only(right: 20.0),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0055D4).withOpacity(0.1),
+                          shape: BoxShape.circle,
                         ),
-                  const SizedBox(height: 80),
-                ],
-              ),
-            ),
-          ]),
-        ),
-      ],
+                        child: const Icon(Icons.admin_panel_settings, color: Color(0xFF0055D4), size: 24),
+                      ),
+                    ),
+                  ],
+                ),
+
+                SliverList(
+                  delegate: SliverChildListDelegate([
+                    Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Kartu Ringkasan
+                          SummaryCard(laporanList: laporanList),
+                          const SizedBox(height: 25),
+                          
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text("Laporan Terbaru", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                              if (laporanList.isNotEmpty)
+                                TextButton(onPressed: (){
+                                  // Opsional: Pindah ke Tab Laporan
+                                }, child: const Text("Lihat Semua")),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+
+                          if (!snapshot.hasData)
+                            const Center(child: CircularProgressIndicator())
+                          else if (latestLaporan.isEmpty)
+                            const Center(child: Text("Belum ada laporan masuk.", style: TextStyle(color: Colors.grey)))
+                          else
+                            Column(children: latestLaporan.map((l) => _buildLaporanItem(context, l)).toList()),
+                          
+                          const SizedBox(height: 80),
+                        ],
+                      ),
+                    ),
+                  ]),
+                ),
+              ],
+            );
+          },
+        );
+      }
     );
   }
 }
 
-// --- 3. KOMPONEN LAINNYA ---
-
-class SummaryCard extends StatelessWidget {
-  final List<Laporan> laporanList;
-  const SummaryCard({super.key, required this.laporanList});
-
-  @override
-  Widget build(BuildContext context) {
-    int baru = laporanList.where((l) => l.status == 'Menunggu').length;
-    int diproses = laporanList.where((l) => l.status == 'Diproses').length;
-    int selesai = laporanList.where((l) => l.status == 'Selesai').length;
-    int ditolak = laporanList.where((l) => l.status == 'Ditolak').length;
-    final primaryColor = Theme.of(context).primaryColor;
-    return Container(
-      padding: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        color: primaryColor,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: primaryColor.withOpacity(0.3),
-            spreadRadius: 2,
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        children: <Widget>[
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              const Icon(Icons.description, color: Colors.white, size: 28),
-              const SizedBox(width: 8),
-              const Text('Rangkuman Laporan', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: <Widget>[
-              Expanded(child: SummaryItem(count: baru, label: 'Laporan Baru', iconColor: const Color(0xFFFFCC00))),
-              const SizedBox(width: 15),
-              Expanded(child: SummaryItem(count: diproses, label: 'Diproses', iconColor: const Color(0xFFFF9500))),
-              const SizedBox(width: 15),
-              Expanded(child: SummaryItem(count: selesai, label: 'Selesai', iconColor: Colors.green)),
-              const SizedBox(width: 15),
-              Expanded(child: SummaryItem(count: ditolak, label: 'Ditolak', iconColor: Colors.red)),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class SummaryItem extends StatelessWidget {
-  final int count;
-  final String label;
-  final Color iconColor; 
-
-  const SummaryItem({
-    super.key,
-    required this.count,
-    required this.label,
-    required this.iconColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Column(
-        children: <Widget>[
-          Text(
-            '$count',
-            style: TextStyle(
-              fontSize: 36,
-              fontWeight: FontWeight.bold,
-              color: iconColor,
-            ),
-          ),
-          const SizedBox(height: 5),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade700,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// --- LAPORAN ADMIN FRAGMENT (Manajemen Laporan) ---
+// --- 2. LAPORAN ADMIN PAGE ---
 class LaporanAdminPage extends StatefulWidget {
   const LaporanAdminPage({super.key});
 
@@ -226,150 +121,63 @@ class LaporanAdminPage extends StatefulWidget {
 
 class _LaporanAdminPageState extends State<LaporanAdminPage> {
   bool _showFilter = false;
+  String _searchQuery = "";
 
   void _toggleFilter() {
-    setState(() {
-      _showFilter = !_showFilter;
-    });
+    setState(() => _showFilter = !_showFilter);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Laporan',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-        ),
-        automaticallyImplyLeading: false, // Hilangkan tombol back
-      ),
-      body: Stack(
-        children: [
-          Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: SearchAndFilterBar(onFilterPressed: _toggleFilter),
-              ),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: laporanList.length,
-                  itemBuilder: (context, index) {
-                    return LaporanListItem(laporan: laporanList[index]);
-                  },
-                ),
-              ),
+    return DefaultTabController(
+      length: 4,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text("Kelola Laporan", style: TextStyle(fontWeight: FontWeight.bold)),
+          centerTitle: false,
+          automaticallyImplyLeading: false,
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          elevation: 0,
+          bottom: const TabBar(
+            isScrollable: true,
+            labelColor: Color(0xFF0055D4),
+            unselectedLabelColor: Colors.grey,
+            indicatorColor: Color(0xFF0055D4),
+            labelStyle: TextStyle(fontWeight: FontWeight.bold),
+            tabs: [
+              Tab(text: "Semua"),
+              Tab(text: "Baru"),
+              Tab(text: "Diproses"),
+              Tab(text: "Selesai"),
             ],
           ),
-
-          if (_showFilter)
-            Positioned(
-              top: 70, 
-              right: 16,
-              left: 16,
-              child: FilterPopupCard(
-                onClose: _toggleFilter,
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-// ===============================================
-// Search Bar dan Ikon Filter
-// ===============================================
-class SearchAndFilterBar extends StatelessWidget {
-  final VoidCallback onFilterPressed;
-
-  const SearchAndFilterBar({super.key, required this.onFilterPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Row(
-        children: [
-          const Expanded(
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Cari ID atau Judul Laporan',
-                border: InputBorder.none,
-                isDense: true,
-                contentPadding: EdgeInsets.zero,
-                prefixIcon: Icon(Icons.search, color: Colors.grey),
-                prefixIconConstraints: BoxConstraints(minWidth: 30, minHeight: 0),
-              ),
-            ),
-          ),
-          IconButton(
-            icon: Icon(Icons.filter_list, color: Theme.of(context).primaryColor),
-            onPressed: onFilterPressed, 
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ===============================================
-// Pop-up Card Filter
-// ===============================================
-class FilterPopupCard extends StatelessWidget {
-  final VoidCallback onClose;
-
-  const FilterPopupCard({super.key, required this.onClose});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 8,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        ),
+        body: Stack(
           children: [
-            const Text(
-              'Filter Laporan',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            TabBarView(
+              children: [
+                _LaporanListStream(filterStatus: null, searchQuery: _searchQuery),
+                _LaporanListStream(filterStatus: 'Baru', searchQuery: _searchQuery),
+                _LaporanListStream(filterStatus: 'Diproses', searchQuery: _searchQuery),
+                _LaporanListStream(filterStatus: 'Selesai', searchQuery: _searchQuery),
+              ],
             ),
-            const Divider(),
             
-            // Filter Dropdowns
-            const Row(
-              children: [
-                Expanded(child: FilterDropdown(label: 'Kategori')),
-                SizedBox(width: 10),
-                Expanded(child: FilterDropdown(label: 'Status')),
-              ],
+            // Search Bar Floating di atas list
+            Positioned(
+              top: 10, left: 16, right: 16,
+              child: SearchAndFilterBar(
+                onFilterPressed: _toggleFilter,
+                onSearchChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
+              ),
             ),
-            const SizedBox(height: 15),
 
-            // Filter Tanggal
-            const Row(
-              children: [
-                Expanded(
-                  child: FilterTanggal(label: 'Tanggal'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-
-            // Tombol Bersihkan Filter
-            TextButton(
-              onPressed: () {
-                onClose(); 
-              },
-              child: const Text('Bersihkan Filter', style: TextStyle(fontWeight: FontWeight.bold)),
-            ),
+            if (_showFilter)
+              Positioned(
+                top: 70, right: 16, left: 16,
+                child: FilterPopupCard(onClose: _toggleFilter),
+              ),
           ],
         ),
       ),
@@ -377,189 +185,52 @@ class FilterPopupCard extends StatelessWidget {
   }
 }
 
-// ===============================================
-// Dropdown Filter Reusable
-// ===============================================
-class FilterDropdown extends StatelessWidget {
-  final String label;
-
-  const FilterDropdown({super.key, required this.label});
+class _LaporanListStream extends StatelessWidget {
+  final String? filterStatus;
+  final String searchQuery;
+  const _LaporanListStream({this.filterStatus, required this.searchQuery});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(color: Colors.grey)),
-          const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
-        ],
-      ),
+    Query query = FirebaseFirestore.instance.collection('laporan').orderBy('createdAt', descending: true);
+    if (filterStatus != null) {
+      query = query.where('status', isEqualTo: filterStatus);
+    }
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: query.snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return _buildEmptyState("Tidak ada data laporan.");
+        }
+
+        // Filter Lokal untuk Search
+        final docs = snapshot.data!.docs.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          final judul = (data['judul'] ?? '').toString().toLowerCase();
+          return judul.contains(searchQuery);
+        }).toList();
+
+        if (docs.isEmpty) return _buildEmptyState("Laporan tidak ditemukan.");
+
+        return ListView.builder(
+          padding: const EdgeInsets.only(top: 70, left: 16, right: 16, bottom: 16), // Top padding untuk search bar
+          itemCount: docs.length,
+          itemBuilder: (ctx, i) {
+            final doc = docs[i];
+            final laporan = _mapToLaporan(doc.id, doc.data() as Map<String, dynamic>);
+            return _buildLaporanItem(context, laporan);
+          },
+        );
+      },
     );
   }
 }
 
-// ===============================================
-// Filter Tanggal Reusable
-// ===============================================
-class FilterTanggal extends StatelessWidget {
-  final String label;
-
-  const FilterTanggal({super.key, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(color: Colors.grey)),
-          const Icon(Icons.calendar_today, color: Colors.grey, size: 20),
-        ],
-      ),
-    );
-  }
-}
-
-// ===============================================
-// Laporan List Item
-// ===============================================
-class LaporanListItem extends StatelessWidget {
-  final Laporan laporan;
-  
-  const LaporanListItem({super.key, required this.laporan});
-
-  Widget _buildCategoryBadge(String kategori, BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Theme.of(context).primaryColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(
-        kategori,
-        style: TextStyle(
-          color: Theme.of(context).primaryColor,
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatusBadge(String status, Color color) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          Icons.circle,
-          size: 8,
-          color: color,
-        ),
-        const SizedBox(width: 5),
-        Text(
-          status,
-          style: TextStyle(
-            color: color,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => DetailLaporanScreen(laporan: laporan),
-            ),
-          );
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(15),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
-                spreadRadius: 1,
-                blurRadius: 5,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      laporan.id,
-                      style: const TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.w500),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      laporan.judul,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: <Widget>[
-                        _buildCategoryBadge(laporan.kategori, context),
-                        const SizedBox(width: 12),
-                        _buildStatusBadge(laporan.status, laporan.statusColor),
-                      ],
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      '${laporan.pelapor} - ${laporan.tanggal}',
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(
-                Icons.arrow_forward_ios,
-                color: Colors.grey,
-                size: 16,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// --- NOTIFICATION FRAGMENT ---
+// --- 3. NOTIFICATION FRAGMENT ---
 class NotificationFragment extends StatelessWidget {
   const NotificationFragment({super.key});
 
@@ -569,20 +240,63 @@ class NotificationFragment extends StatelessWidget {
       appBar: AppBar(
         title: const Text("Notifikasi"),
         automaticallyImplyLeading: false,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
       ),
-      body: ListView.separated(
-        itemCount: 5,
-        separatorBuilder: (_, _) => const Divider(height: 1),
-        itemBuilder: (ctx, i) {
-          return ListTile(
-            tileColor: i == 0 ? Colors.blue[50] : Colors.white,
-            leading: CircleAvatar(
-              backgroundColor: Colors.blue[100],
-              child: const Icon(Icons.notifications, color: Colors.blue),
-            ),
-            title: const Text("Sistem Admin Info", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-            subtitle: const Text("Ada laporan baru yang memerlukan verifikasi segera.", maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12)),
-            trailing: const Text("Baru saja", style: TextStyle(fontSize: 10, color: Colors.grey)),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('laporan')
+            .where('status', isEqualTo: 'Baru')
+            .orderBy('createdAt', descending: true)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) return _buildEmptyState("Tidak ada notifikasi baru.");
+
+          return ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: snapshot.data!.docs.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            itemBuilder: (ctx, i) {
+              final doc = snapshot.data!.docs[i];
+              final laporan = _mapToLaporan(doc.id, doc.data() as Map<String, dynamic>);
+
+              return InkWell(
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => DetailLaporanScreen(laporan: laporan))),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.blue.shade100),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(color: Colors.blue.withOpacity(0.2), shape: BoxShape.circle),
+                        child: const Icon(Icons.notifications_active, color: Color(0xFF0055D4)),
+                      ),
+                      const SizedBox(width: 15),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text("Laporan Baru Masuk!", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                            const SizedBox(height: 4),
+                            Text("${laporan.judul} - ${laporan.kategori}", maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.grey[700], fontSize: 12)),
+                            const SizedBox(height: 4),
+                            Text(laporan.tanggal, style: TextStyle(fontSize: 10, color: Colors.grey[500])),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
+                    ],
+                  ),
+                ),
+              );
+            },
           );
         },
       ),
@@ -590,51 +304,64 @@ class NotificationFragment extends StatelessWidget {
   }
 }
 
-// --- ACCOUNT FRAGMENT (UPDATED FOR ADMIN) ---
+// --- 4. ACCOUNT FRAGMENT (SINKRONISASI REAL-TIME) ---
 class AccountFragment extends StatelessWidget {
   final Map<String, dynamic>? userData;
   const AccountFragment({super.key, this.userData});
 
   @override
   Widget build(BuildContext context) {
-    final String nama = userData?['nama_lengkap'] ?? 'Pengguna';
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(userData?['role'] == 'admin' ? "Akun Admin": "Akun Saya"),
-        automaticallyImplyLeading: false,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            const CircleAvatar(radius: 50, backgroundImage: NetworkImage("https://i.pravatar.cc/150?img=12")), 
-            const SizedBox(height: 15),
-            Text(nama, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 30),
-            
-            // --- MENU ITEM DISESUAIKAN UNTUK ADMIN ---
-            // Mengarah ke halaman yang sama dengan User untuk konsistensi konten
-            _menuItem(context, icon: Icons.person_outline, title: "Edit Profil", onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const EditProfilePage()));
-            }),
-            _menuItem(context, icon: Icons.info_outline, title: "Tentang Aplikasi", onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const TentangAplikasiPage()));
-            }),
-            _menuItem(context, icon: Icons.privacy_tip_outlined, title: "Kebijakan Privasi", onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const KebijakanPrivasiPage()));
-            }),
-            _menuItem(context, icon: Icons.description_outlined, title: "Syarat dan Ketentuan", onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const SyaratKetentuanPage()));
-            }),
-            
-            const Divider(),
-            
-            _menuItem(context, icon: Icons.logout, title: "Keluar", color: Colors.red, onTap: () {
-               Navigator.pushReplacementNamed(context, '/login'); 
-            }),
-          ],
-        ),
-      ),
+    final user = FirebaseAuth.instance.currentUser;
+
+    // Gunakan StreamBuilder ke koleksi 'users' agar profil update otomatis
+    return StreamBuilder<DocumentSnapshot>(
+      stream: user != null ? FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots() : null,
+      builder: (context, snapshot) {
+        String nama = userData?['nama_lengkap'] ?? 'Admin';
+        String email = user?.email ?? userData?['email'] ?? 'admin@laporki.com';
+
+        // Jika data update dari Firestore tersedia, gunakan itu
+        if (snapshot.hasData && snapshot.data!.exists) {
+          final data = snapshot.data!.data() as Map<String, dynamic>;
+          nama = data['nama_lengkap'] ?? nama;
+        }
+
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text("Akun Saya"), 
+            automaticallyImplyLeading: false,
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+            elevation: 0,
+          ),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                const CircleAvatar(
+                  radius: 50, 
+                  backgroundImage: NetworkImage("https://i.pravatar.cc/150?img=12"), // Avatar Admin
+                ),
+                const SizedBox(height: 15),
+                
+                Text(nama, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                Text(email, style: const TextStyle(color: Colors.grey)),
+                
+                const SizedBox(height: 30),
+                
+                _menuItem(context, icon: Icons.person_outline, title: "Edit Profil", onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EditProfilePage()))),
+                _menuItem(context, icon: Icons.info_outline, title: "Tentang Aplikasi", onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TentangAplikasiPage()))),
+                _menuItem(context, icon: Icons.privacy_tip_outlined, title: "Kebijakan Privasi", onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const KebijakanPrivasiPage()))),
+                _menuItem(context, icon: Icons.description_outlined, title: "Syarat dan Ketentuan", onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SyaratKetentuanPage()))),
+                
+                const Divider(),
+                
+                _menuItem(context, icon: Icons.logout, title: "Keluar", color: Colors.red, onTap: () => Navigator.pushReplacementNamed(context, '/login')),
+              ],
+            ),
+          ),
+        );
+      }
     );
   }
 
@@ -646,4 +373,136 @@ class AccountFragment extends StatelessWidget {
       trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
     );
   }
+}
+
+// --- WIDGET HELPER ---
+
+Widget _buildEmptyState(String message) {
+  return Center(child: Text(message, style: const TextStyle(color: Colors.grey)));
+}
+
+Widget _buildLaporanItem(BuildContext context, Laporan laporan) {
+  return InkWell(
+    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => DetailLaporanScreen(laporan: laporan))),
+    child: Card(
+      elevation: 2,
+      margin: const EdgeInsets.only(bottom: 15),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(color: Colors.blue[50], borderRadius: BorderRadius.circular(4)),
+                        child: Text(laporan.kategori, style: const TextStyle(color: Color(0xFF0055D4), fontSize: 10, fontWeight: FontWeight.bold)),
+                      ),
+                      Text(laporan.tanggal, style: TextStyle(color: Colors.grey[400], fontSize: 10)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(laporan.judul, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(Icons.circle, size: 10, color: laporan.statusColor),
+                      const SizedBox(width: 5),
+                      Text(laporan.status, style: TextStyle(color: laporan.statusColor, fontSize: 12, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class SummaryCard extends StatelessWidget {
+  final List<Laporan> laporanList;
+  const SummaryCard({super.key, required this.laporanList});
+  @override
+  Widget build(BuildContext context) {
+    int baru = laporanList.where((l) => l.status == 'Baru').length;
+    int diproses = laporanList.where((l) => l.status == 'Diproses').length;
+    int selesai = laporanList.where((l) => l.status == 'Selesai').length;
+    int ditolak = laporanList.where((l) => l.status == 'Ditolak').length;
+    final primaryColor = Theme.of(context).primaryColor;
+    return Container(
+      padding: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(color: primaryColor, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: primaryColor.withOpacity(0.3), spreadRadius: 2, blurRadius: 10, offset: const Offset(0, 5))]),
+      child: Column(children: [
+        const Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.description, color: Colors.white, size: 28), SizedBox(width: 8), Text('Rangkuman', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold))]),
+        const SizedBox(height: 20),
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          Flexible(child: SummaryItem(count: baru, label: 'Baru', iconColor: const Color(0xFFFFCC00))),
+          Flexible(child: SummaryItem(count: diproses, label: 'Proses', iconColor: const Color(0xFFFF9500))),
+          Flexible(child: SummaryItem(count: selesai, label: 'Selesai', iconColor: Colors.green)),
+          Flexible(child: SummaryItem(count: ditolak, label: 'Ditolak', iconColor: Colors.red)),
+        ]),
+      ]),
+    );
+  }
+}
+
+class SummaryItem extends StatelessWidget {
+  final int count; final String label; final Color iconColor;
+  const SummaryItem({super.key, required this.count, required this.label, required this.iconColor});
+  @override
+  Widget build(BuildContext context) {
+    return Column(children: [
+      Text('$count', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
+      Text(label, style: const TextStyle(fontSize: 10, color: Colors.white70)),
+    ]);
+  }
+}
+
+class SearchAndFilterBar extends StatelessWidget {
+  final VoidCallback onFilterPressed;
+  final Function(String) onSearchChanged;
+  const SearchAndFilterBar({super.key, required this.onFilterPressed, required this.onSearchChanged});
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.grey.shade300)),
+      child: Row(children: [
+        Expanded(child: TextField(onChanged: onSearchChanged, decoration: const InputDecoration(hintText: 'Cari ID atau Judul Laporan', border: InputBorder.none, isDense: true, contentPadding: EdgeInsets.zero, prefixIcon: Icon(Icons.search, color: Colors.grey)))),
+        IconButton(icon: Icon(Icons.filter_list, color: Theme.of(context).primaryColor), onPressed: onFilterPressed)
+      ]),
+    );
+  }
+}
+
+class FilterPopupCard extends StatelessWidget {
+  final VoidCallback onClose;
+  const FilterPopupCard({super.key, required this.onClose});
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 8, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      child: Padding(padding: const EdgeInsets.all(16.0), child: Column(mainAxisSize: MainAxisSize.min, children: [
+        const Text('Filter Laporan', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)), const SizedBox(height: 10), TextButton(onPressed: onClose, child: const Text('Tutup'))
+      ])),
+    );
+  }
+}
+
+Laporan _mapToLaporan(String id, Map<String, dynamic> data) {
+  String formatDate(dynamic val) { if (val is Timestamp) return DateFormat('dd MMM yyyy').format(val.toDate()); return val?.toString() ?? '-'; }
+  Color getStatusColor(String? status) { if (status == 'Selesai') return Colors.green; if (status == 'Ditolak') return Colors.red; if (status == 'Diproses') return Colors.blue; return Colors.orange; }
+  return Laporan(id: id, judul: data['judul'] ?? 'Tanpa Judul', lokasi: data['lokasi'] ?? '-', detailLokasi: data['detailLokasi'] ?? '-', deskripsi: data['deskripsi'] ?? '-', kategori: data['kategori'] ?? 'Lainnya', jenis: data['jenis'] ?? 'Publik', pelapor: data['pelapor'] ?? '-', status: data['status'] ?? 'Baru', tanggal: formatDate(data['createdAt'] ?? data['tanggal']), statusColor: getStatusColor(data['status']), imagePath: data['imagePath'] ?? data['foto'] ?? 'assets/images/placeholder.png');
 }

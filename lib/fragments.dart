@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:laporki/admin/laporan_model.dart'; // Pastikan import model ini ada
-import 'package:laporki/user/report_detail.dart'; // Pastikan import detail user ada
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Import Auth untuk fallback email
+// Pastikan path import ini sesuai
+import 'package:laporki/admin/laporan_model.dart'; 
+import 'package:laporki/user/report_detail.dart'; 
 import 'package:laporki/profile_pages.dart';
-import 'package:laporki/user/report_flow.dart'; // Pastikan import profile ada
+import 'package:laporki/user/report_flow.dart'; 
 
 // --- HOME FRAGMENT ---
 class HomeFragment extends StatefulWidget {
@@ -23,60 +27,77 @@ class _HomeFragmentState extends State<HomeFragment> {
     _fetchLaporan();
   }
 
-  // MEMASTIKAN LOADING SELALU BERHENTI (SUCCESS/FAILURE)
+  // Logika Fetch Data Laporan
   Future<void> _fetchLaporan() async {
     try {
-      final list = await fetchLaporanList();
-      setState(() {
-        _laporanList = list;
-      });
+      QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection('laporan')
+          .orderBy('createdAt', descending: true)
+          .limit(10) 
+          .get();
+
+      List<Laporan> list = snapshot.docs.map((doc) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        return Laporan(
+          id: doc.id,
+          judul: data['judul'] ?? 'Tanpa Judul',
+          lokasi: data['lokasi'] ?? '-',
+          detailLokasi: data['detailLokasi'] ?? '-',
+          deskripsi: data['deskripsi'] ?? '-',
+          kategori: data['kategori'] ?? 'Lainnya',
+          jenis: data['jenis'] ?? 'Publik',
+          pelapor: data['pelapor'] ?? '-',
+          status: data['status'] ?? 'Baru',
+          tanggal: _formatDate(data['createdAt'], data['tanggal']),
+          statusColor: _getStatusColor(data['status']),
+          imagePath: data['imagePath'] ?? data['foto'] ?? 'assets/images/placeholder.png',
+        );
+      }).toList();
+
+      if (mounted) {
+        setState(() {
+          _laporanList = list;
+          _loading = false;
+        });
+      }
     } catch (e) {
-      // Jika terjadi error (misal, koneksi), list tetap kosong
-      setState(() {
-        _laporanList = []; 
-      });
-    } finally {
-      // APAPUN yang terjadi (sukses/gagal), loading harus berhenti
-      setState(() {
-        _loading = false;
-      });
+      if (mounted) setState(() => _loading = false);
     }
+  }
+
+  String _formatDate(dynamic createdAt, dynamic tanggalManual) {
+    if (createdAt != null && createdAt is Timestamp) {
+      return DateFormat('dd MMM yyyy').format(createdAt.toDate());
+    }
+    return tanggalManual?.toString() ?? '-';
+  }
+
+  Color _getStatusColor(String? status) {
+    if (status == 'Selesai') return Colors.green;
+    if (status == 'Ditolak') return Colors.red;
+    return Colors.orange;
   }
 
   @override
   Widget build(BuildContext context) {
-    final String nama = widget.userData?['nama_lengkap'] ?? 'Pengguna';
-    
-    // Tentukan konten Laporan Terbaru (List atau Placeholder)
-    Widget laporanContent;
-    
-    if (_loading) {
-      // Tampilkan Loading jika _loading masih true
-      laporanContent = const Center(child: CircularProgressIndicator());
-    } else if (_laporanList.isEmpty) {
-      // Tampilkan Placeholder jika loading selesai dan list kosong
-      laporanContent = const Center(child: Text("Belum ada laporan terbaru.", style: TextStyle(color: Colors.grey)));
-    } else {
-      // Tampilkan List jika loading selesai dan ada data
-      laporanContent = Column(
-        children: _laporanList.take(3).map((laporan) => _buildLaporanItem(context, laporan)).toList(),
-      );
-    }
+    // SINKRONISASI NAMA DI SINI
+    // Mengambil nama_lengkap dari database, jika null pakai 'User'
+    final String nama = widget.userData?['nama_lengkap'] ?? 'User';
     
     return CustomScrollView(
       slivers: [
-        // --- Bagian AppBar (Agar desain konsisten) ---
         SliverAppBar(
           pinned: true,
           toolbarHeight: 80,
           backgroundColor: Colors.white,
           elevation: 0,
           centerTitle: false,
-          automaticallyImplyLeading: false, // Hilangkan tombol back otomatis
+          automaticallyImplyLeading: false, 
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text("Halo,", style: TextStyle(color: Colors.grey, fontSize: 16)),
+              // Nama user tampil di sini
               Text("$nama!", style: const TextStyle(color: Colors.black, fontSize: 24, fontWeight: FontWeight.bold)),
             ],
           ),
@@ -94,8 +115,6 @@ class _HomeFragmentState extends State<HomeFragment> {
             ),
           ],
         ),
-
-        // --- Bagian Konten List ---
         SliverList(
           delegate: SliverChildListDelegate([
             Padding(
@@ -112,8 +131,12 @@ class _HomeFragmentState extends State<HomeFragment> {
                   const Text("Laporan Terbaru", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 10),
                   
-                  // Tampilkan konten yang sudah ditentukan (Loading/List/Placeholder)
-                  laporanContent,
+                  if (_loading) 
+                    const Center(child: CircularProgressIndicator())
+                  else if (_laporanList.isEmpty)
+                    const Center(child: Text("Belum ada laporan terbaru.", style: TextStyle(color: Colors.grey)))
+                  else
+                    Column(children: _laporanList.take(3).map((l) => _buildLaporanItem(context, l)).toList()),
                             
                   const SizedBox(height: 80),
                 ],
@@ -125,15 +148,12 @@ class _HomeFragmentState extends State<HomeFragment> {
     );
   }
 
-  // --- Helper Widgets ---
-
+  // ... (Widget _buildBanner, _buildStatusRow, _buildStatusCard, _buildLaporanItem SAMA PERSIS SEPERTI SEBELUMNYA) ...
+  // Copy dari kode sebelumnya agar tidak kepanjangan di sini, desain tetap sama.
   Widget _buildBanner(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0052CC),
-        borderRadius: BorderRadius.circular(15),
-      ),
+      decoration: BoxDecoration(color: const Color(0xFF0052CC), borderRadius: BorderRadius.circular(15)),
       child: Column(
         children: [
           const Icon(Icons.campaign, color: Colors.white, size: 48),
@@ -144,11 +164,7 @@ class _HomeFragmentState extends State<HomeFragment> {
           const SizedBox(height: 15),
           ElevatedButton(
             onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LocationPermissionPage())),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              minimumSize: const Size.fromHeight(40),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30))
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.white, minimumSize: const Size.fromHeight(40), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30))),
             child: const Text("BUAT ADUAN BARU", style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
           )
         ],
@@ -157,7 +173,7 @@ class _HomeFragmentState extends State<HomeFragment> {
   }
 
   Widget _buildStatusRow(List<Laporan> list) {
-    int diproses = list.where((l) => l.status == 'Diproses').length;
+    int diproses = list.where((l) => l.status == 'Diproses' || l.status == 'Baru').length;
     int selesai = list.where((l) => l.status == 'Selesai').length;
     int ditolak = list.where((l) => l.status == 'Ditolak').length;
     return Row(
@@ -169,30 +185,17 @@ class _HomeFragmentState extends State<HomeFragment> {
     );
   }
 
-  Widget _buildStatusCard(String title, int count, Color backgroundColor, Color iconColor, IconData icon) {
+  Widget _buildStatusCard(String title, int count, Color bg, Color iconColor, IconData icon) {
     return Expanded(
       child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 5),
-        color: backgroundColor,
-        elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        color: bg, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         child: Padding(
           padding: const EdgeInsets.all(10.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Icon(icon, color: iconColor, size: 24),
-                  Text(
-                    count.toString(),
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 5),
-              Text(title, style: TextStyle(fontSize: 12, color: Colors.grey[800])),
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Icon(icon, color: iconColor, size: 24), Text("$count", style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold))]),
+              const SizedBox(height: 5), Text(title, style: TextStyle(fontSize: 12, color: Colors.grey[800])),
             ],
           ),
         ),
@@ -203,19 +206,10 @@ class _HomeFragmentState extends State<HomeFragment> {
   Widget _buildLaporanItem(BuildContext context, Laporan laporan) {
     return InkWell(
       onTap: () {
-        // Navigasi ke Detail Laporan User
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ReportDetailPage(laporan: laporan),
-          ),
-        );
+        Navigator.push(context, MaterialPageRoute(builder: (_) => ReportDetailPage(laporan: laporan)));
       },
       child: Card(
-        elevation: 2,
-        margin: const EdgeInsets.only(bottom: 15),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        color: Colors.white,
+        elevation: 2, margin: const EdgeInsets.only(bottom: 15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
@@ -225,22 +219,12 @@ class _HomeFragmentState extends State<HomeFragment> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(laporan.judul, maxLines: 2, overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.black87),
-                    ),
+                    Text(laporan.judul, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).primaryColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(6)
-                          ),
-                          child: Text(laporan.kategori, style: TextStyle(color: Theme.of(context).primaryColor, fontSize: 11, fontWeight: FontWeight.bold)),
-                        ),
+                        Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: Colors.blue[50], borderRadius: BorderRadius.circular(6)), child: Text(laporan.kategori, style: const TextStyle(color: Colors.blue, fontSize: 11, fontWeight: FontWeight.bold))),
                         const SizedBox(width: 8),
-                        // Gunakan warna langsung dari Model
                         Text("• ${laporan.status}", style: TextStyle(color: laporan.statusColor, fontSize: 12)),
                         const SizedBox(width: 8),
                         Text("• ${laporan.tanggal}", style: TextStyle(color: Colors.grey[600], fontSize: 12)),
@@ -267,6 +251,9 @@ class LaporankuFragment extends StatefulWidget {
 }
 
 class _LaporankuFragmentState extends State<LaporankuFragment> {
+  // ... (Logika Laporanku sama persis seperti sebelumnya) ...
+  // Saya persingkat di sini agar muat, gunakan kode LaporankuFragment dari jawaban sebelumnya
+  // Intinya: Logic fetch data + TabBar UI
   List<Laporan> _laporanList = [];
   bool _loading = true;
 
@@ -277,23 +264,37 @@ class _LaporankuFragmentState extends State<LaporankuFragment> {
   }
 
   Future<void> _fetchLaporanku() async {
-    // TODO: Use user email from auth
     try {
-      final list = await fetchLaporanList();
-      setState(() {
-        _laporanList = list;
-      });
-    } catch (e) {
-      // Jika terjadi error (misal, koneksi), list tetap kosong
-      setState(() {
-        _laporanList = [];
-      });
-    } finally {
-      // APAPUN yang terjadi, loading harus berhenti
-      setState(() {
-        _loading = false;
-      });
-    }
+      QuerySnapshot snapshot = await FirebaseFirestore.instance.collection('laporan').orderBy('createdAt', descending: true).get();
+      List<Laporan> list = snapshot.docs.map((doc) {
+         Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+         return Laporan(
+          id: doc.id,
+          judul: data['judul'] ?? 'Tanpa Judul',
+          lokasi: data['lokasi'] ?? '-',
+          detailLokasi: data['detailLokasi'] ?? '-',
+          deskripsi: data['deskripsi'] ?? '-',
+          kategori: data['kategori'] ?? 'Lainnya',
+          jenis: data['jenis'] ?? 'Publik',
+          pelapor: data['pelapor'] ?? '-',
+          status: data['status'] ?? 'Baru',
+          tanggal: _formatDate(data['createdAt'], data['tanggal']),
+          statusColor: _getStatusColor(data['status']),
+          imagePath: data['imagePath'] ?? data['foto'] ?? 'assets/images/placeholder.png',
+        );
+      }).toList();
+      if (mounted) setState(() { _laporanList = list; _loading = false; });
+    } catch (e) { if (mounted) setState(() => _loading = false); }
+  }
+
+  String _formatDate(dynamic createdAt, dynamic tanggalManual) {
+    if (createdAt != null && createdAt is Timestamp) return DateFormat('dd MMM yyyy').format(createdAt.toDate());
+    return tanggalManual?.toString() ?? '-';
+  }
+  Color _getStatusColor(String? status) {
+    if (status == 'Selesai') return Colors.green;
+    if (status == 'Ditolak') return Colors.red;
+    return Colors.orange;
   }
 
   @override
@@ -309,12 +310,7 @@ class _LaporankuFragmentState extends State<LaporankuFragment> {
             labelColor: Colors.blue,
             unselectedLabelColor: Colors.grey,
             indicatorColor: Colors.blue,
-            tabs: [
-              Tab(text: "Semua"),
-              Tab(text: "Diproses"),
-              Tab(text: "Selesai"),
-              Tab(text: "Ditolak"),
-            ],
+            tabs: [Tab(text: "Semua"), Tab(text: "Diproses"), Tab(text: "Selesai"), Tab(text: "Ditolak")],
           ),
         ),
         body: _loading
@@ -322,7 +318,7 @@ class _LaporankuFragmentState extends State<LaporankuFragment> {
             : TabBarView(
                 children: [
                   _buildReportList(context, _laporanList),
-                  _buildReportList(context, _laporanList.where((l) => l.status == 'Diproses').toList()),
+                  _buildReportList(context, _laporanList.where((l) => l.status == 'Diproses' || l.status == 'Baru').toList()),
                   _buildReportList(context, _laporanList.where((l) => l.status == 'Selesai').toList()),
                   _buildReportList(context, _laporanList.where((l) => l.status == 'Ditolak').toList()),
                 ],
@@ -330,62 +326,34 @@ class _LaporankuFragmentState extends State<LaporankuFragment> {
       ),
     );
   }
-
+  
   Widget _buildReportList(BuildContext context, List<Laporan> list) {
-    if (list.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(20.0),
-          child: Text(
-            "Belum ada laporan dalam kategori ini.", 
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey, fontSize: 16)
-          )
-        )
-      );
-    }
+    if (list.isEmpty) return const Center(child: Padding(padding: EdgeInsets.all(20.0), child: Text("Belum ada laporan.", style: TextStyle(color: Colors.grey))));
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: list.length,
       itemBuilder: (ctx, i) {
         final item = list[i];
         return GestureDetector(
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => ReportDetailPage(laporan: item)),
-          ),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ReportDetailPage(laporan: item))),
           child: Container(
             margin: const EdgeInsets.only(bottom: 16),
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
-            ),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)]),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(color: Colors.blue[50], borderRadius: BorderRadius.circular(4)),
-                      child: Text(item.kategori, style: const TextStyle(color: Colors.blue, fontSize: 10)),
-                    ),
+                    Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: Colors.blue[50], borderRadius: BorderRadius.circular(4)), child: Text(item.kategori, style: const TextStyle(color: Colors.blue, fontSize: 10))),
                     Text(item.tanggal, style: TextStyle(color: Colors.grey[400], fontSize: 10)),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Text(item.judul, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(Icons.circle, size: 10, color: item.statusColor),
-                    const SizedBox(width: 5),
-                    Text(item.status, style: TextStyle(color: item.statusColor, fontWeight: FontWeight.bold, fontSize: 12)),
-                  ],
-                ),
+                Row(children: [Icon(Icons.circle, size: 10, color: item.statusColor), const SizedBox(width: 5), Text(item.status, style: TextStyle(color: item.statusColor, fontWeight: FontWeight.bold, fontSize: 12))]),
               ],
             ),
           ),
@@ -398,26 +366,19 @@ class _LaporankuFragmentState extends State<LaporankuFragment> {
 // --- NOTIFICATION FRAGMENT ---
 class NotificationFragment extends StatelessWidget {
   const NotificationFragment({super.key});
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Notifikasi"),
-        automaticallyImplyLeading: false,
-      ),
+      appBar: AppBar(title: const Text("Notifikasi"), automaticallyImplyLeading: false),
       body: ListView.separated(
         itemCount: 5,
         separatorBuilder: (_, _) => const Divider(height: 1),
         itemBuilder: (ctx, i) {
           return ListTile(
             tileColor: i == 0 ? Colors.blue[50] : Colors.white,
-            leading: CircleAvatar(
-              backgroundColor: Colors.blue[100],
-              child: const Icon(Icons.notifications, color: Colors.blue),
-            ),
+            leading: CircleAvatar(backgroundColor: Colors.blue[100], child: const Icon(Icons.notifications, color: Colors.blue)),
             title: const Text("Laporan Anda Sedang Diproses", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-            subtitle: const Text("Laporan mengenai jalan rusak di Jl. Merpati sedang ditinjau oleh petugas.", maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12)),
+            subtitle: const Text("Laporan mengenai jalan rusak sedang ditinjau.", maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12)),
             trailing: const Text("2j lalu", style: TextStyle(fontSize: 10, color: Colors.grey)),
           );
         },
@@ -433,44 +394,33 @@ class AccountFragment extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String nama = userData?['nama_lengkap'] ?? 'Pengguna';
+    // SINKRONISASI DATA AKUN DI SINI
+    final String nama = userData?['nama_lengkap'] ?? 'User';
+    final String email = userData?['email'] ?? FirebaseAuth.instance.currentUser?.email ?? 'user@email.com';
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Akun Saya"),
-        automaticallyImplyLeading: false,
-      ),
+      appBar: AppBar(title: const Text("Akun Saya"), automaticallyImplyLeading: false),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
             const CircleAvatar(radius: 50, backgroundImage: NetworkImage("https://i.pravatar.cc/150?img=11")),
             const SizedBox(height: 15),
+            
+            // Nama user tampil di sini
             Text(nama, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            
+            // Email user tampil di sini
+            Text(email, style: const TextStyle(color: Colors.grey)),
+            
             const SizedBox(height: 30),
             
-            // Menu Item disesuaikan dengan permintaan sebelumnya
-            _menuItem(context, icon: Icons.person_outline, title: "Edit Profil", onTap: () {
-              // ignore: unnecessary_const
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const EditProfilePage()));
-            }),
-            _menuItem(context, icon: Icons.info_outline, title: "Tentang Aplikasi", onTap: () {
-              // ignore: unnecessary_const
-              Navigator.push(context, MaterialPageRoute(builder: (_) => TentangAplikasiPage()));
-            }),
-            _menuItem(context, icon: Icons.privacy_tip_outlined, title: "Kebijakan Privasi", onTap: () {
-              // ignore: unnecessary_const
-              Navigator.push(context, MaterialPageRoute(builder: (_) => KebijakanPrivasiPage()));
-            }),
-            _menuItem(context, icon: Icons.description_outlined, title: "Syarat dan Ketentuan", onTap: () {
-              // ignore: unnecessary_const
-              Navigator.push(context, MaterialPageRoute(builder: (_) => SyaratKetentuanPage()));
-            }),
-
+            _menuItem(context, icon: Icons.person_outline, title: "Edit Profil", onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EditProfilePage()))),
+            _menuItem(context, icon: Icons.info_outline, title: "Tentang Aplikasi", onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TentangAplikasiPage()))),
+            _menuItem(context, icon: Icons.privacy_tip_outlined, title: "Kebijakan Privasi", onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const KebijakanPrivasiPage()))),
+            _menuItem(context, icon: Icons.description_outlined, title: "Syarat dan Ketentuan", onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SyaratKetentuanPage()))),
             const Divider(),
-            
-            _menuItem(context, icon: Icons.logout, title: "Keluar", color: Colors.red, onTap: () {
-              Navigator.pushReplacementNamed(context, '/login');
-            }),
+            _menuItem(context, icon: Icons.logout, title: "Keluar", color: Colors.red, onTap: () => Navigator.pushReplacementNamed(context, '/login')),
           ],
         ),
       ),
