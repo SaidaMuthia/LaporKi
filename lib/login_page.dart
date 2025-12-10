@@ -1,11 +1,18 @@
-// ...existing code...
-import 'package:laporki/onboarding_page.dart';
+// lib/login_page.dart
 
-import 'controllers/auth_controller.dart';
 import 'package:flutter/material.dart';
-import 'register_page.dart';
-import './user/user_dashboard.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
+// Import dari root lib/
+import 'onboarding_page.dart';
+import 'register_page.dart';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+// Jika Anda menggunakan Color di model, ini juga perlu:
+import 'package:flutter/material.dart';
+
+// --- 1. DEFINISI KELAS UTAMA (StatefulWidget) ---
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -13,13 +20,13 @@ class LoginPage extends StatefulWidget {
   State<LoginPage> createState() => _LoginPageState();
 }
 
+// --- 2. DEFINISI KELAS STATE ---
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _showPassword = false;
   bool _rememberMe = false;
-  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -28,50 +35,94 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  Future<void> signIn() async {
-    if (!_formKey.currentState!.validate()) return;
+  // --- 3. FUNGSI LOGIN DENGAN PENGECEKAN ROLE ---
+  Future<void> _loginUser() async {
+    // 0. Validasi Form
+    if (!_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Email atau Password tidak valid")),
+      );
+      return;
+    }
 
-    setState(() => _isLoading = true);
+    // Tampilkan Loading
+    if (!mounted) return;
+    showDialog(
+      context: context, 
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
     try {
-      await AuthController().signInUser(
-        _emailController.text.trim(),
-        _passwordController.text,
+      // 1. Login ke Firebase Auth
+      UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
       );
 
+      // 2. Ambil Data Role dari Firestore
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userCredential.user!.uid)
+          .get();
+      
+      // Tutup Loading
       if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => UserDashboard()),
-      );
+      Navigator.pop(context); 
+
+      if (userDoc.exists) {
+        String role = userDoc.get('role'); // Ambil field 'role'
+
+        // 3. Cek Role dan Arahkan (Menggunakan Named Routes)
+        if (role == 'admin') {
+          // Navigasi ke rute admin yang terdaftar di main.dart
+          Navigator.pushReplacementNamed(context, '/admin'); 
+        } else {
+          // Navigasi ke rute dashboard user yang terdaftar di main.dart
+          Navigator.pushReplacementNamed(context, '/dashboard');
+        }
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Login Berhasil!")),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Data user tidak ditemukan di database.")),
+        );
+      }
+
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context); // Tutup Loading jika error
+      
+      String errorMessage = "Login Gagal";
+      if (e.code == 'user-not-found') errorMessage = "Akun tidak ditemukan";
+      else if (e.code == 'wrong-password') errorMessage = "Password salah";
+      else if (e.code == 'invalid-credential') errorMessage = "Kredensial tidak valid";
+      
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage)));
     } catch (e) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text("Error"),
-          content: Text(e.toString()),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK')),
-          ],
-        ),
-      );
-    } finally {
-      setState(() => _isLoading = false);
+      if (!mounted) return;
+      Navigator.pop(context); // Tutup Loading jika error
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
     }
   }
 
+  // --- 4. VALIDATOR ---
   String? _emailValidator(String? value) {
-    if (value == null || value.isEmpty) return 'Please enter your email';
+    if (value == null || value.isEmpty) return 'Silakan masukkan email Anda';
     final regex = RegExp(r'^[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}$');
-    if (!regex.hasMatch(value)) return 'Please enter a valid email';
+    if (!regex.hasMatch(value)) return 'Silakan masukkan email yang valid';
     return null;
   }
 
   String? _passwordValidator(String? value) {
-    if (value == null || value.isEmpty) return 'Please enter your password';
-    if (value.length < 6) return 'Password must be at least 6 characters';
+    if (value == null || value.isEmpty) return 'Silakan masukkan kata sandi Anda';
+    if (value.length < 6) return 'Kata sandi minimal 6 karakter';
     return null;
   }
 
+  // --- 5. WIDGET BUILD ---
   @override
   Widget build(BuildContext context) {
     const primaryBlue = Color(0xFF005AC2);
@@ -82,7 +133,7 @@ class _LoginPageState extends State<LoginPage> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (_) => const OnboardingPage()),
+              MaterialPageRoute(builder: (_) => const OnboardingPage()), 
             )
         ),
         backgroundColor: Colors.white,
@@ -157,7 +208,6 @@ class _LoginPageState extends State<LoginPage> {
                           borderSide: BorderSide.none),
                     ),
                     validator: _emailValidator,
-
                   ),
                   const SizedBox(height: 15),
 
@@ -211,11 +261,9 @@ class _LoginPageState extends State<LoginPage> {
                   backgroundColor: primaryBlue,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
-                onPressed: _isLoading ? null : signIn,
-                child: _isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text("Masuk",
-                        style: TextStyle(color: Colors.white, fontSize: 16)),
+                onPressed: _loginUser, 
+                child: const Text("Masuk",
+                    style: TextStyle(color: Colors.white, fontSize: 16)),
               ),
             ),
 
@@ -244,7 +292,3 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 }
-
-
-
-

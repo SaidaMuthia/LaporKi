@@ -47,12 +47,19 @@ class MyApp extends StatelessWidget {
       ),
       initialRoute: '/',
       routes: {
-        '/': (context) => OnboardingPage(),
-        '/login': (context) => LoginPage(),
-        '/register': (context) => RegisterPage(),
-        '/dashboard': (context) => UserDashboard(),
-        '/report_permission': (context) => LocationPermissionPage(),
-        '/admin': (context) => const AdminDashboard(),
+  // Gunakan const jika memungkinkan
+  '/': (context) => const OnboardingPage(),
+  '/login': (context) => const LoginPage(),
+  '/register': (context) => const RegisterPage(),
+  
+  // Asumsi dashboard juga const (untuk kinerja)
+  '/dashboard': (context) => const UserDashboard(), 
+  
+  // Asumsi halaman permission juga const
+  '/report_permission': (context) => const LocationPermissionPage(),
+  
+  // Sudah const, bagus
+  '/admin': (context) => const AdminDashboard(),
       },
     );
   }
