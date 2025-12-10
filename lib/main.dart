@@ -1,9 +1,20 @@
 import 'package:flutter/material.dart';
-import './auth/auth_pages.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart'; 
+
+import 'onboarding_page.dart';
+import 'login_page.dart';
+import 'register_page.dart';
 import './user/user_dashboard.dart';
 import './user/report_flow.dart';
 
-void main() {
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+ );
+
   runApp(const MyApp());
 }
 
@@ -33,13 +44,13 @@ class MyApp extends StatelessWidget {
           iconTheme: IconThemeData(color: Colors.black),
         ),
       ),
-      initialRoute: '/',
+      initialRoute: '/onboarding',
       routes: {
-        '/': (context) => const OnboardingPage(),
-        '/login': (context) => const LoginPage(),
-        '/register': (context) => const RegisterPage(),
-        '/dashboard': (context) => const UserDashboard(),
-        '/report_permission': (context) => const LocationPermissionPage(),
+        '/onboarding': (context) => OnboardingPage(),
+        '/login': (context) => LoginPage(),
+        '/register': (context) => RegisterPage(),
+        '/dashboard': (context) => UserDashboard(),
+        '/report_permission': (context) => LocationPermissionPage(),
       },
     );
   }

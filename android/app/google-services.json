@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "878439758236",
+    "project_id": "final-mobile-b2d4c",
+    "storage_bucket": "final-mobile-b2d4c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:878439758236:android:6ff0b3ed620f3c8ff47059",
+        "android_client_info": {
+          "package_name": "com.example.final_mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCxI0MVv_cuQJrZEqj7T9f9K2NF54v0-Qg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:878439758236:android:aeccec5df7bafdd5f47059",
+        "android_client_info": {
+          "package_name": "com.example.laporki"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCxI0MVv_cuQJrZEqj7T9f9K2NF54v0-Qg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
