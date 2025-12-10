@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:laporki/admin/fragments.dart';
 
 class AdminDashboard extends StatefulWidget {
-  const AdminDashboard({super.key});
+  final Map<String, dynamic>? userData;
+  const AdminDashboard({super.key, this.userData});
 
   @override
   State<AdminDashboard> createState() => _AdminDashboardState();
@@ -10,14 +11,18 @@ class AdminDashboard extends StatefulWidget {
 
 class _AdminDashboardState extends State<AdminDashboard> {
   int _selectedIndex = 0;
+  late final List<Widget> _pages;
 
-  // Daftar Halaman untuk Admin
-  final List<Widget> _pages = [
-    const AdminHomePage(),      // Index 0: Beranda Admin (Beda konten)
-    const LaporanAdminPage(),   // Index 1: Manajemen Laporan (Beda konten)
-    const NotificationFragment(),   // Index 2: Notifikasi (Sama persis dgn User)
-    const AccountFragment(),        // Index 3: Akun (Sama persis dgn User)
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      AdminHomePage(userData: widget.userData),
+      const LaporanAdminPage(),
+      const NotificationFragment(),
+      AccountFragment(userData: widget.userData),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {

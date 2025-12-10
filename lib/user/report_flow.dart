@@ -375,6 +375,16 @@ class SetDetailsPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const Text("Judul Laporan", style: TextStyle(fontWeight: FontWeight.w500)),
+            const SizedBox(height: 8),
+            TextField(
+              maxLines: 2,
+              decoration: const InputDecoration(
+                hintText: "Ketik judul di sini...",
+                hintStyle: TextStyle(color: Colors.grey),
+              ),
+            ),
+            const SizedBox(height: 8),
             const Text("Deskripsi Laporan", style: TextStyle(fontWeight: FontWeight.w500)),
             const Text("Kamu bisa tulis deskripsi masalah, waktu kejadian, dan detail lain yang diperlukan.", 
               style: TextStyle(fontSize: 12, color: Colors.grey)),
@@ -468,6 +478,7 @@ class ReviewReportPage extends StatelessWidget {
             const SizedBox(height: 20),
 
             // Item-item Review
+            _buildReviewItem("Judul Laporan", "Jalan Berlubang Parah di Depan SMA 8 Gowa"),
             _buildReviewItem("Lokasi Laporan", "Jl. Malino No.Km.6, Romang Lompoa, Kec. Bontomarannu, Kabupaten Gowa, Sulawesi Selatan 92171, Indonesia"),
             _buildReviewItem("Detail Lokasi Laporan", "Trotoar di depan Balai Kota"),
             _buildReviewItem("Deskripsi Laporan", "Jalan berlubang cukup dalam di depan Toko Sinar Jaya, menyebabkan kendaraan sering melambat dan hampir terjadi kecelakaan. Mohon segera dilakukan perbaikan sebelum menimbulkan bahaya lebih besar."),

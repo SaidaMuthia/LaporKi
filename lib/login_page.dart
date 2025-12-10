@@ -1,10 +1,11 @@
-// ...existing code...
 import 'package:laporki/onboarding_page.dart';
-
-import 'controllers/auth_controller.dart';
-import 'package:flutter/material.dart';
 import 'register_page.dart';
 import './user/user_dashboard.dart';
+import './admin/admin_dashboard.dart';
+import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'controllers/auth_controller.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -28,34 +29,43 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
+  // --- LOGIKA LOGIN FIREBASE ---
   Future<void> signIn() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
     try {
-      await AuthController().signInUser(
-        _emailController.text.trim(),
-        _passwordController.text,
+      // 1. Login Auth
+      UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
       );
 
+      // 2. Cek Role di Firestore
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userCredential.user!.uid)
+          .get();
+
+      // Ambil data user dari Firestore
+      final userData = await AuthController().getCurrentUserData();
       if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => UserDashboard()),
-      );
+      if (userData == null) throw Exception('Data user tidak ditemukan');
+      if (userData['role'] == 'admin') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const AdminDashboard()),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => UserDashboard(userData: userData)),
+        );
+      }
     } catch (e) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text("Error"),
-          content: Text(e.toString()),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK')),
-          ],
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -244,7 +254,3 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 }
-
-
-
-

@@ -7,12 +7,14 @@ import 'package:laporki/profile_pages.dart';
 // --- 2. ADMIN HOME PAGE (KONTEN BERANDA) ---
 
 class AdminHomePage extends StatelessWidget {
-  const AdminHomePage({super.key});
+  final Map<String, dynamic>? userData;
+  const AdminHomePage({super.key, this.userData});
 
   @override
   Widget build(BuildContext context) {
     // Ambil 4 laporan terbaru untuk tampilan beranda
     final List<Laporan> latestLaporan = laporanList.take(4).toList();
+    final String nama = userData?['nama_lengkap'] ?? 'Admin';
     
     return CustomScrollView(
       slivers: [
@@ -25,18 +27,18 @@ class AdminHomePage extends StatelessWidget {
           centerTitle: false,
           automaticallyImplyLeading: false, 
 
-          title: const Padding(
-            padding: EdgeInsets.only(top: 10.0),
+          title: Padding(
+            padding: const EdgeInsets.only(top: 10.0),
             child: Column( 
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   "Halo,", 
                   style: TextStyle(color: Colors.grey, fontSize: 16)
                 ), 
                 Text(
-                  "Admin Kota!", 
-                  style: TextStyle(
+                  nama.isNotEmpty ? nama : "$nama!", 
+                  style: const TextStyle(
                     color: Colors.black, 
                     fontSize: 24, 
                     fontWeight: FontWeight.bold
@@ -591,13 +593,15 @@ class NotificationFragment extends StatelessWidget {
 
 // --- ACCOUNT FRAGMENT (UPDATED FOR ADMIN) ---
 class AccountFragment extends StatelessWidget {
-  const AccountFragment({super.key});
+  final Map<String, dynamic>? userData;
+  const AccountFragment({super.key, this.userData});
 
   @override
   Widget build(BuildContext context) {
+    final String nama = userData?['nama_lengkap'] ?? 'Pengguna';
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Akun Admin"),
+        title: Text(userData?['role'] == 'admin' ? "Akun Admin": "Akun Saya"),
         automaticallyImplyLeading: false,
       ),
       body: SingleChildScrollView(
@@ -606,8 +610,7 @@ class AccountFragment extends StatelessWidget {
           children: [
             const CircleAvatar(radius: 50, backgroundImage: NetworkImage("https://i.pravatar.cc/150?img=12")), 
             const SizedBox(height: 15),
-            const Text("Admin Utama", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const Text("admin@laporki.go.id", style: TextStyle(color: Colors.grey)),
+            Text(nama, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 30),
             
             // --- MENU ITEM DISESUAIKAN UNTUK ADMIN ---

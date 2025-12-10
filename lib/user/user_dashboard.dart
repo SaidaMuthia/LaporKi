@@ -13,7 +13,8 @@ void main() {
 // 1. UTAMA: USER DASHBOARD (NAVIGASI)
 // ==========================================
 class UserDashboard extends StatefulWidget {
-  const UserDashboard({super.key});
+  final Map<String, dynamic>? userData;
+  const UserDashboard({super.key, this.userData});
 
   @override
   State<UserDashboard> createState() => _UserDashboardState();
@@ -22,20 +23,17 @@ class UserDashboard extends StatefulWidget {
 class _UserDashboardState extends State<UserDashboard> {
   int _selectedIndex = 0; // Index halaman aktif
 
-  // Daftar Halaman (Fragment)
-  final List<Widget> _pages = [
-    const HomeFragment(),           // Index 0: Beranda
-    const LaporankuFragment(),      // Index 1: Riwayat
-    const NotificationFragment(),   // Index 2: Notifikasi
-    const AccountFragment(),        // Index 3: Akun Saya
-  ];
+  late final List<Widget> _pages;
 
   @override
   void initState() {
     super.initState();
-    // --- SOLUSI FAB TERBANG ---
-    // Setiap kali halaman ini dibuka (misal setelah kirim laporan),
-    // kita paksa hapus SnackBar agar tombol biru TIDAK terdorong ke atas.
+    _pages = [
+      HomeFragment(userData: widget.userData),
+      const LaporankuFragment(),
+      const NotificationFragment(),
+      AccountFragment(userData: widget.userData),
+    ];
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ScaffoldMessenger.of(context).clearSnackBars();
     });

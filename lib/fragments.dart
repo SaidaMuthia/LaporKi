@@ -6,12 +6,14 @@ import 'package:laporki/user/report_flow.dart'; // Pastikan import profile ada
 
 // --- HOME FRAGMENT ---
 class HomeFragment extends StatelessWidget {
-  const HomeFragment({super.key});
+  final Map<String, dynamic>? userData;
+  const HomeFragment({super.key, this.userData});
 
   @override
   Widget build(BuildContext context) {
     // 1. Ambil data dari Model global (bukan hardcode Map lagi)
     final List<Laporan> displayList = laporanList.take(3).toList();
+    final String nama = userData?['nama_lengkap'] ?? 'Pengguna';
 
     // 2. Wajib Return Widget (CustomScrollView)
     return CustomScrollView(
@@ -24,11 +26,11 @@ class HomeFragment extends StatelessWidget {
           elevation: 0,
           centerTitle: false,
           automaticallyImplyLeading: false, // Hilangkan tombol back otomatis
-          title: const Column(
+          title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Halo,", style: TextStyle(color: Colors.grey, fontSize: 16)),
-              Text("Rahmat Hidayat!", style: TextStyle(color: Colors.black, fontSize: 24, fontWeight: FontWeight.bold)),
+              const Text("Halo,", style: TextStyle(color: Colors.grey, fontSize: 16)),
+              Text("$nama!", style: const TextStyle(color: Colors.black, fontSize: 24, fontWeight: FontWeight.bold)),
             ],
           ),
           actions: [
@@ -337,10 +339,12 @@ class NotificationFragment extends StatelessWidget {
 
 // --- ACCOUNT FRAGMENT ---
 class AccountFragment extends StatelessWidget {
-  const AccountFragment({super.key});
+  final Map<String, dynamic>? userData;
+  const AccountFragment({super.key, this.userData});
 
   @override
   Widget build(BuildContext context) {
+    final String nama = userData?['nama_lengkap'] ?? 'Pengguna';
     return Scaffold(
       appBar: AppBar(
         title: const Text("Akun Saya"),
@@ -352,8 +356,7 @@ class AccountFragment extends StatelessWidget {
           children: [
             const CircleAvatar(radius: 50, backgroundImage: NetworkImage("https://i.pravatar.cc/150?img=11")),
             const SizedBox(height: 15),
-            const Text("Rahmat Hidayat", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const Text("rahmat.hidayat@email.com", style: TextStyle(color: Colors.grey)),
+            Text(nama, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 30),
             
             // Menu Item disesuaikan dengan permintaan sebelumnya
