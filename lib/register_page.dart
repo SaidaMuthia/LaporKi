@@ -2,7 +2,6 @@ import 'controllers/auth_controller.dart';
 import 'package:flutter/material.dart';
 import 'login_page.dart';
 
-
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
 
@@ -12,6 +11,7 @@ class RegisterPage extends StatefulWidget {
 
 class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _nikController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
@@ -26,6 +26,7 @@ class _RegisterPageState extends State<RegisterPage> {
     if (!_formKey.currentState!.validate()) return;
 
     final name = _nameController.text.trim();
+    final nik = _nikController.text.trim();
     final email = _emailController.text.trim();
     final pass = _passwordController.text;
     final confirm = _confirmPasswordController.text;
@@ -34,18 +35,18 @@ class _RegisterPageState extends State<RegisterPage> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password tidak cocok')));
       return;
     }
-
+    if (nik.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('NIK wajib diisi')));
+      return;
+    }
     setState(() => _isLoading = true);
     try {
-
-      final user = await AuthController().registerUser(email, pass);
+      final user = await AuthController().registerUser(email, pass, name, nik);
       try {
         await user.updateDisplayName(name);
         await user.reload();
-      } catch (_){
-
-      }
-          if (!mounted) return;
+      } catch (_) {}
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Registrasi berhasil')));
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginPage()));
     } catch (e) {
@@ -59,6 +60,7 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   void dispose() {
     _nameController.dispose();
+    _nikController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -152,6 +154,22 @@ class _RegisterPageState extends State<RegisterPage> {
                         borderSide: BorderSide.none),
                   ),
                   validator: (v) => (v == null || v.trim().isEmpty) ? 'Nama tidak boleh kosong' : null,
+                ),
+                const SizedBox(height: 15),
+
+                // NIK FIELD
+                TextFormField(
+                  controller: _nikController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    hintText: "Masukkan NIK",
+                    filled: true,
+                    fillColor: const Color(0xfff0f0f0),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide.none),
+                  ),
+                  validator: (v) => (v == null || v.trim().isEmpty) ? 'NIK wajib diisi' : null,
                 ),
                 const SizedBox(height: 15),
 

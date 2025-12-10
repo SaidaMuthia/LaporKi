@@ -1,10 +1,10 @@
-// ...existing code...
 import 'package:laporki/onboarding_page.dart';
 
 import 'controllers/auth_controller.dart';
 import 'package:flutter/material.dart';
 import 'register_page.dart';
 import './user/user_dashboard.dart';
+import './admin/admin_dashboard.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -38,11 +38,21 @@ class _LoginPageState extends State<LoginPage> {
         _passwordController.text,
       );
 
+      // Ambil data user dari Firestore
+      final userData = await AuthController().getCurrentUserData();
       if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => UserDashboard()),
-      );
+      if (userData == null) throw Exception('Data user tidak ditemukan');
+      if (userData['role'] == 'admin') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const AdminDashboard()),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => UserDashboard(userData: userData)),
+        );
+      }
     } catch (e) {
       showDialog(
         context: context,
