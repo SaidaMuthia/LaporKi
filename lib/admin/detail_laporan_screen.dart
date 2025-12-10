@@ -60,6 +60,7 @@ class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Tindak Lanjut berhasil disimpan!')),
     );
+    Navigator.pop(context, (route) => MaterialPageRoute(builder: (context) => const RiwayatTindakLanjutScreen()));
   }
   
   // Fungsi untuk menampilkan gambar penuh
