@@ -1,4 +1,6 @@
 // ...existing code...
+import 'package:laporki/onboarding_page.dart';
+
 import 'controllers/auth_controller.dart';
 import 'package:flutter/material.dart';
 import 'register_page.dart';
@@ -78,7 +80,10 @@ class _LoginPageState extends State<LoginPage> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const OnboardingPage()),
+            )
         ),
         backgroundColor: Colors.white,
         elevation: 0,
