@@ -120,7 +120,7 @@ class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
             padding: const EdgeInsets.only(right: 16.0),
             child: Center(
               child: Text(
-                '${laporan.tanggal}', // Ganti dengan format tanggal yang sesuai
+                laporan.tanggal, // Ganti dengan format tanggal yang sesuai
                 style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
               ),
             ),
@@ -185,7 +185,7 @@ class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     ),
-                    value: _selectedStatus,
+                    initialValue: _selectedStatus,
                     hint: const Text('Pilih Status'),
                     items: _statusOptions.map((String status) {
                       return DropdownMenuItem<String>(

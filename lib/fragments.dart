@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:laporki/admin/laporan_model.dart'; // Pastikan import model ini ada
 import 'package:laporki/user/report_detail.dart'; // Pastikan import detail user ada
-import 'package:laporki/profile_pages.dart'; // Pastikan import profile ada
+import 'package:laporki/profile_pages.dart';
+import 'package:laporki/user/report_flow.dart'; // Pastikan import profile ada
 
 // --- HOME FRAGMENT ---
 class HomeFragment extends StatelessWidget {
@@ -102,7 +103,7 @@ class HomeFragment extends StatelessWidget {
           const Text("Aduan Anda membantu menciptakan lingkungan yang lebih baik.", textAlign: TextAlign.center, style: TextStyle(color: Colors.white70)),
           const SizedBox(height: 15),
           ElevatedButton(
-            onPressed: () { debugPrint("BUAT ADUAN BARU diklik!"); },
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LocationPermissionPage())),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
               minimumSize: const Size.fromHeight(40),
