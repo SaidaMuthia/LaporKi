@@ -5,17 +5,35 @@ import 'package:laporki/profile_pages.dart';
 import 'package:laporki/user/report_flow.dart'; // Pastikan import profile ada
 
 // --- HOME FRAGMENT ---
-class HomeFragment extends StatelessWidget {
+class HomeFragment extends StatefulWidget {
   final Map<String, dynamic>? userData;
   const HomeFragment({super.key, this.userData});
 
   @override
-  Widget build(BuildContext context) {
-    // 1. Ambil data dari Model global (bukan hardcode Map lagi)
-    final List<Laporan> displayList = laporanList.take(3).toList();
-    final String nama = userData?['nama_lengkap'] ?? 'Pengguna';
+  State<HomeFragment> createState() => _HomeFragmentState();
+}
 
-    // 2. Wajib Return Widget (CustomScrollView)
+class _HomeFragmentState extends State<HomeFragment> {
+  List<Laporan> _laporanList = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchLaporan();
+  }
+
+  Future<void> _fetchLaporan() async {
+    final list = await fetchLaporanList();
+    setState(() {
+      _laporanList = list;
+      _loading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final String nama = widget.userData?['nama_lengkap'] ?? 'Pengguna';
     return CustomScrollView(
       slivers: [
         // --- Bagian AppBar (Agar desain konsisten) ---
@@ -50,38 +68,30 @@ class HomeFragment extends StatelessWidget {
 
         // --- Bagian Konten List ---
         SliverList(
-          delegate: SliverChildListDelegate(
-            [
-              Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildBanner(context),
-                    const SizedBox(height: 20),
-                    const Text("Status LaporanKu", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 15),
-                    Row(
-                      children: [
-                        _buildStatusCard("Diproses", 1, Colors.orange.shade50, Colors.orange, Icons.cached),
-                        _buildStatusCard("Selesai", 5, Colors.green.shade50, Colors.green.shade700, Icons.check_circle_outline),
-                        _buildStatusCard("Ditolak", 0, Colors.red.shade50, Colors.red.shade700, Icons.cancel_outlined),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    const Text("Laporan Terbaru", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 10),
-
-                    // Menampilkan List Laporan dari Model
-                    Column(
-                      children: displayList.map((laporan) => _buildLaporanItem(context, laporan)).toList(),
-                    ),
-                    const SizedBox(height: 80),
-                  ],
-                ),
+          delegate: SliverChildListDelegate([
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildBanner(context),
+                  const SizedBox(height: 20),
+                  const Text("Status LaporanKu", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 15),
+                  _buildStatusRow(_laporanList),
+                  const SizedBox(height: 20),
+                  const Text("Laporan Terbaru", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 10),
+                  _loading
+                      ? const Center(child: CircularProgressIndicator())
+                      : Column(
+                          children: _laporanList.take(3).map((laporan) => _buildLaporanItem(context, laporan)).toList(),
+                        ),
+                  const SizedBox(height: 80),
+                ],
               ),
-            ],
-          ),
+            ),
+          ]),
         ),
       ],
     );
@@ -118,6 +128,19 @@ class HomeFragment extends StatelessWidget {
     );
   }
 
+  Widget _buildStatusRow(List<Laporan> list) {
+    int diproses = list.where((l) => l.status == 'Diproses').length;
+    int selesai = list.where((l) => l.status == 'Selesai').length;
+    int ditolak = list.where((l) => l.status == 'Ditolak').length;
+    return Row(
+      children: [
+        _buildStatusCard("Diproses", diproses, Colors.orange.shade50, Colors.orange, Icons.cached),
+        _buildStatusCard("Selesai", selesai, Colors.green.shade50, Colors.green.shade700, Icons.check_circle_outline),
+        _buildStatusCard("Ditolak", ditolak, Colors.red.shade50, Colors.red.shade700, Icons.cancel_outlined),
+      ],
+    );
+  }
+
   Widget _buildStatusCard(String title, int count, Color backgroundColor, Color iconColor, IconData icon) {
     return Expanded(
       child: Card(
@@ -149,7 +172,6 @@ class HomeFragment extends StatelessWidget {
     );
   }
 
-  // FIXED: Menerima objek 'Laporan' bukan 'Map'
   Widget _buildLaporanItem(BuildContext context, Laporan laporan) {
     return InkWell(
       onTap: () {
@@ -209,8 +231,31 @@ class HomeFragment extends StatelessWidget {
 }
 
 // --- LAPORANKU FRAGMENT ---
-class LaporankuFragment extends StatelessWidget {
+class LaporankuFragment extends StatefulWidget {
   const LaporankuFragment({super.key});
+
+  @override
+  State<LaporankuFragment> createState() => _LaporankuFragmentState();
+}
+
+class _LaporankuFragmentState extends State<LaporankuFragment> {
+  List<Laporan> _laporanList = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchLaporanku();
+  }
+
+  Future<void> _fetchLaporanku() async {
+    // TODO: Use user email from auth
+    final list = await fetchLaporanList();
+    setState(() {
+      _laporanList = list;
+      _loading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -233,37 +278,33 @@ class LaporankuFragment extends StatelessWidget {
             ],
           ),
         ),
-        body: TabBarView(
-          children: [
-            _buildReportList(context),
-            _buildReportList(context, filter: "Sedang Diproses"), // Sesuaikan string dengan data dummy
-            _buildReportList(context, filter: "Selesai"),
-            _buildReportList(context, filter: "Ditolak"),
-          ],
-        ),
+        body: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : TabBarView(
+                children: [
+                  _buildReportList(context, _laporanList),
+                  _buildReportList(context, _laporanList.where((l) => l.status == 'Diproses').toList()),
+                  _buildReportList(context, _laporanList.where((l) => l.status == 'Selesai').toList()),
+                  _buildReportList(context, _laporanList.where((l) => l.status == 'Ditolak').toList()),
+                ],
+              ),
       ),
     );
   }
 
-  Widget _buildReportList(BuildContext context, {String? filter}) {
-    // Filter data dari model global 'laporanList'
-    final filtered = filter == null
-        ? laporanList
-        : laporanList.where((r) => r.status == filter).toList();
-
-    if (filtered.isEmpty) {
-      return Center(child: Text("Belum ada laporan $filter", style: const TextStyle(color: Colors.grey)));
+  Widget _buildReportList(BuildContext context, List<Laporan> list) {
+    if (list.isEmpty) {
+      return const Center(child: Text("Belum ada laporan", style: TextStyle(color: Colors.grey)));
     }
-
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: filtered.length,
+      itemCount: list.length,
       itemBuilder: (ctx, i) {
-        final item = filtered[i];
+        final item = list[i];
         return GestureDetector(
           onTap: () => Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => ReportDetailPage(laporan: item))
+            MaterialPageRoute(builder: (_) => ReportDetailPage(laporan: item)),
           ),
           child: Container(
             margin: const EdgeInsets.only(bottom: 16),
@@ -271,7 +312,7 @@ class LaporankuFragment extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)]
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -296,7 +337,7 @@ class LaporankuFragment extends StatelessWidget {
                     const SizedBox(width: 5),
                     Text(item.status, style: TextStyle(color: item.statusColor, fontWeight: FontWeight.bold, fontSize: 12)),
                   ],
-                )
+                ),
               ],
             ),
           ),

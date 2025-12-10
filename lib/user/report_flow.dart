@@ -1,9 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:laporki/user/user_dashboard.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'report_draft.dart';
+import 'package:camera/camera.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'dart:io';
 
 // --- 1. PERMISSION PAGE ---
 class LocationPermissionPage extends StatelessWidget {
-  const LocationPermissionPage({super.key});
+  final ReportDraft? draft;
+  const LocationPermissionPage({super.key, this.draft});
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +61,12 @@ class LocationPermissionPage extends StatelessWidget {
               height: 50,
               child: ElevatedButton(
                 onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const CameraPage()));
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CameraPage(draft: draft ?? ReportDraft()),
+                    ),
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF0055D4),
@@ -88,8 +103,34 @@ class LocationPermissionPage extends StatelessWidget {
 }
 
 // --- 2. CAMERA PAGE ---
-class CameraPage extends StatelessWidget {
-  const CameraPage({super.key});
+class CameraPage extends StatefulWidget {
+  final ReportDraft draft;
+  const CameraPage({super.key, required this.draft});
+
+  @override
+  State<CameraPage> createState() => _CameraPageState();
+}
+
+class _CameraPageState extends State<CameraPage> {
+  XFile? _imageFile;
+  bool _loading = false;
+
+  Future<void> _takePicture() async {
+    setState(() => _loading = true);
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.camera, imageQuality: 80);
+    if (pickedFile != null) {
+      setState(() => _imageFile = pickedFile);
+      widget.draft.imageFile = File(pickedFile.path);
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ReviewImagePage(draft: widget.draft),
+        ),
+      );
+    }
+    setState(() => _loading = false);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -97,21 +138,11 @@ class CameraPage extends StatelessWidget {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Placeholder Kamera (Background)
-          Container(
-            width: double.infinity,
-            height: double.infinity,
-            decoration: const BoxDecoration(
-              image: DecorationImage(
-                // Menggunakan placeholder gambar jalan rusak dari contoh
-                image: NetworkImage("https://via.placeholder.com/400x800"), 
-                fit: BoxFit.cover,
-                opacity: 0.6,
-              ),
-            ),
-            child: const Center(child: Text("Camera Preview", style: TextStyle(color: Colors.white))),
+          Center(
+            child: _loading
+                ? const CircularProgressIndicator(color: Colors.white)
+                : const Text("Camera Preview", style: TextStyle(color: Colors.white)),
           ),
-          
           // Header
           SafeArea(
             child: Padding(
@@ -158,9 +189,7 @@ class CameraPage extends StatelessWidget {
                 
                 // Shutter Button
                 GestureDetector(
-                  onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const ReviewImagePage()));
-                  },
+                  onTap: _takePicture,
                   child: Container(
                     width: 80,
                     height: 80,
@@ -195,7 +224,8 @@ class CameraPage extends StatelessWidget {
 
 // --- 3. REVIEW IMAGE PAGE ---
 class ReviewImagePage extends StatelessWidget {
-  const ReviewImagePage({super.key});
+  final ReportDraft draft;
+  const ReviewImagePage({super.key, required this.draft});
 
   @override
   Widget build(BuildContext context) {
@@ -203,17 +233,14 @@ class ReviewImagePage extends StatelessWidget {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Gambar Full Screen
-          Container(
-            width: double.infinity,
-            height: double.infinity,
-            decoration: const BoxDecoration(
-              image: DecorationImage(
-                image: NetworkImage("https://via.placeholder.com/400x800"), // Ganti dengan path file asli nanti
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
+          draft.imageFile != null
+              ? Image.file(
+                  draft.imageFile!,
+                  width: double.infinity,
+                  height: double.infinity,
+                  fit: BoxFit.cover,
+                )
+              : const Center(child: Text("Tidak ada gambar", style: TextStyle(color: Colors.white))),
           
           // Header Overlay
           SafeArea(
@@ -261,7 +288,12 @@ class ReviewImagePage extends StatelessWidget {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const SetLocationPage()));
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => SetLocationPage(draft: draft),
+                        ),
+                      );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF0055D4),
@@ -282,8 +314,48 @@ class ReviewImagePage extends StatelessWidget {
 }
 
 // --- 4. SET LOCATION PAGE ---
-class SetLocationPage extends StatelessWidget {
-  const SetLocationPage({super.key});
+class SetLocationPage extends StatefulWidget {
+  final ReportDraft draft;
+  const SetLocationPage({super.key, required this.draft});
+
+  @override
+  State<SetLocationPage> createState() => _SetLocationPageState();
+}
+
+class _SetLocationPageState extends State<SetLocationPage> {
+  final _detailLokasiController = TextEditingController();
+  String? _address;
+  double? _latitude;
+  double? _longitude;
+  bool _loading = false;
+
+  Future<void> _getCurrentLocation() async {
+    setState(() => _loading = true);
+    final permission = await Geolocator.requestPermission();
+    if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Izin lokasi ditolak.')));
+      setState(() => _loading = false);
+      return;
+    }
+    final position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+    _latitude = position.latitude;
+    _longitude = position.longitude;
+    final placemarks = await placemarkFromCoordinates(_latitude!, _longitude!);
+    if (placemarks.isNotEmpty) {
+      final p = placemarks.first;
+      _address = "${p.street}, ${p.subLocality}, ${p.locality}, ${p.administrativeArea}, ${p.country}";
+    } else {
+      _address = "Lokasi tidak ditemukan";
+    }
+    setState(() {});
+    setState(() => _loading = false);
+  }
+
+  @override
+  void dispose() {
+    _detailLokasiController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -303,7 +375,7 @@ class SetLocationPage extends StatelessWidget {
             const Text("Lokasi Laporan", style: TextStyle(fontWeight: FontWeight.w500)),
             const SizedBox(height: 8),
             InkWell(
-              onTap: () {}, // Buka Peta
+              onTap: _getCurrentLocation,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                 decoration: BoxDecoration(
@@ -311,35 +383,46 @@ class SetLocationPage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
-                  children: const [
-                    Icon(Icons.location_on_outlined, color: Color(0xFF0055D4)),
-                    SizedBox(width: 10),
-                    Text("Pilih lokasi", style: TextStyle(color: Colors.grey)),
+                  children: [
+                    const Icon(Icons.location_on_outlined, color: Color(0xFF0055D4)),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _loading
+                          ? const Text("Mendeteksi lokasi...", style: TextStyle(color: Colors.grey))
+                          : Text(_address ?? "Pilih lokasi", style: const TextStyle(color: Colors.grey)),
+                    ),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 20),
-            
             const Text("Detail Tambahan Lokasi", style: TextStyle(fontWeight: FontWeight.w500)),
             const Text("(Nama gedung, patokan, keadaan sekitar, dll.)", style: TextStyle(fontSize: 12, color: Colors.grey)),
             const SizedBox(height: 8),
             TextField(
+              controller: _detailLokasiController,
               maxLines: 4,
               decoration: const InputDecoration(
                 hintText: "Contoh: Trotoar di depan Balai Kota",
                 hintStyle: TextStyle(color: Colors.grey),
               ),
             ),
-            
             const Spacer(),
-            
             SizedBox(
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
                 onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const SetDetailsPage()));
+                  widget.draft.detailLokasi = _detailLokasiController.text;
+                  widget.draft.address = _address;
+                  widget.draft.latitude = _latitude;
+                  widget.draft.longitude = _longitude;
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => SetDetailsPage(draft: widget.draft),
+                    ),
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF0055D4),
@@ -357,8 +440,26 @@ class SetLocationPage extends StatelessWidget {
 }
 
 // --- 5. SET DETAILS PAGE ---
-class SetDetailsPage extends StatelessWidget {
-  const SetDetailsPage({super.key});
+class SetDetailsPage extends StatefulWidget {
+  final ReportDraft draft;
+  const SetDetailsPage({super.key, required this.draft});
+
+  @override
+  State<SetDetailsPage> createState() => _SetDetailsPageState();
+}
+
+class _SetDetailsPageState extends State<SetDetailsPage> {
+  final _judulController = TextEditingController();
+  final _deskripsiController = TextEditingController();
+  String? _kategori;
+  String? _jenis;
+
+  @override
+  void dispose() {
+    _judulController.dispose();
+    _deskripsiController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -378,6 +479,7 @@ class SetDetailsPage extends StatelessWidget {
             const Text("Judul Laporan", style: TextStyle(fontWeight: FontWeight.w500)),
             const SizedBox(height: 8),
             TextField(
+              controller: _judulController,
               maxLines: 2,
               decoration: const InputDecoration(
                 hintText: "Ketik judul di sini...",
@@ -390,6 +492,7 @@ class SetDetailsPage extends StatelessWidget {
               style: TextStyle(fontSize: 12, color: Colors.grey)),
             const SizedBox(height: 8),
             TextField(
+              controller: _deskripsiController,
               maxLines: 4,
               decoration: const InputDecoration(
                 hintText: "Ketik dengan detail, jelas, dan padat...",
@@ -397,39 +500,47 @@ class SetDetailsPage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-
             const Text("Kategori Laporan", style: TextStyle(fontWeight: FontWeight.w500)),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
+              value: _kategori,
               decoration: const InputDecoration(),
               hint: const Text("Pilih kategori"),
               items: const [
                 DropdownMenuItem(value: "Infrastruktur", child: Text("Infrastruktur")),
                 DropdownMenuItem(value: "Kebersihan", child: Text("Kebersihan")),
               ],
-              onChanged: (val) {},
+              onChanged: (val) => setState(() => _kategori = val),
             ),
             const SizedBox(height: 20),
-
             const Text("Jenis Laporan", style: TextStyle(fontWeight: FontWeight.w500)),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
+              value: _jenis,
               decoration: const InputDecoration(),
               hint: const Text("Pilih jenis"),
               items: const [
                 DropdownMenuItem(value: "Publik", child: Text("Publik")),
                 DropdownMenuItem(value: "Privat", child: Text("Privat")),
               ],
-              onChanged: (val) {},
+              onChanged: (val) => setState(() => _jenis = val),
             ),
             const SizedBox(height: 40),
-
             SizedBox(
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
                 onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ReviewReportPage()));
+                  widget.draft.judul = _judulController.text;
+                  widget.draft.deskripsi = _deskripsiController.text;
+                  widget.draft.kategori = _kategori;
+                  widget.draft.jenis = _jenis;
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ReviewReportPage(draft: widget.draft),
+                    ),
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF0055D4),
@@ -448,7 +559,29 @@ class SetDetailsPage extends StatelessWidget {
 
 // --- 6. REVIEW & SUBMIT PAGE ---
 class ReviewReportPage extends StatelessWidget {
-  const ReviewReportPage({super.key});
+  final ReportDraft draft;
+  const ReviewReportPage({super.key, required this.draft});
+
+  Future<void> _submitReport(BuildContext context) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Anda harus login.')));
+      return;
+    }
+    final pelapor = user.email ?? user.uid;
+    final laporanData = draft.toMap(pelapor: pelapor, status: 'Baru');
+    try {
+      await FirebaseFirestore.instance.collection('laporan').add(laporanData);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Laporan Terkirim!')));
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const UserDashboard()),
+        (route) => false,
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal mengirim laporan: $e')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -492,19 +625,7 @@ class ReviewReportPage extends StatelessWidget {
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: () {
-                  // Aksi Kirim Data
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Laporan Terkirim!")));
-                  
-                  // 🚨 PERBAIKAN UTAMA DI SINI 🚨
-                  // Gunakan pushAndRemoveUntil untuk menghapus semua halaman sebelumnya (kamera, form, dll)
-                  // Ini membuat UserDashboard menjadi halaman 'root' baru, sehingga tidak ada tombol back.
-                  Navigator.pushAndRemoveUntil(
-                    context, 
-                    MaterialPageRoute(builder: (context) => const UserDashboard()), 
-                    (route) => false // Return false artinya hapus semua rute sebelumnya
-                  );
-                },
+                onPressed: () => _submitReport(context),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF0055D4),
                   foregroundColor: Colors.white,

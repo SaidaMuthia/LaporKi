@@ -6,16 +6,36 @@ import 'package:laporki/profile_pages.dart';
 
 // --- 2. ADMIN HOME PAGE (KONTEN BERANDA) ---
 
-class AdminHomePage extends StatelessWidget {
+class AdminHomePage extends StatefulWidget {
   final Map<String, dynamic>? userData;
   const AdminHomePage({super.key, this.userData});
 
   @override
+  State<AdminHomePage> createState() => _AdminHomePageState();
+}
+
+class _AdminHomePageState extends State<AdminHomePage> {
+  List<Laporan> _laporanList = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchLaporan();
+  }
+
+  Future<void> _fetchLaporan() async {
+    final list = await fetchLaporanList();
+    setState(() {
+      _laporanList = list;
+      _loading = false;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Ambil 4 laporan terbaru untuk tampilan beranda
-    final List<Laporan> latestLaporan = laporanList.take(4).toList();
-    final String nama = userData?['nama_lengkap'] ?? 'Admin';
-    
+    final String nama = widget.userData?['nama_lengkap'] ?? 'Admin';
+    final List<Laporan> latestLaporan = _laporanList.take(4).toList();
     return CustomScrollView(
       slivers: [
         // --- 1. BAGIAN APP BAR (HEADER) ---
@@ -64,41 +84,31 @@ class AdminHomePage extends StatelessWidget {
 
         // --- 2. BAGIAN ISI KONTEN ---
         SliverList(
-          delegate: SliverChildListDelegate(
-            [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    const SummaryCard(),
-                    
-                    const SizedBox(height: 25),
-                    const Text(
-                      'Laporan Terbaru',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 15),
-                    
-                    // Daftar Laporan
-                    ListView.builder(
-                      shrinkWrap: true, 
-                      physics: const NeverScrollableScrollPhysics(), 
-                      itemCount: latestLaporan.length,
-                      itemBuilder: (context, index) {
-                        return LaporanListItem(laporan: latestLaporan[index]);
-                      },
-                    ),
-                    const SizedBox(height: 80),
-                  ],
-                ),
+          delegate: SliverChildListDelegate([
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  SummaryCard(laporanList: _laporanList),
+                  const SizedBox(height: 25),
+                  const Text('Laporan Terbaru', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87)),
+                  const SizedBox(height: 15),
+                  _loading
+                      ? const Center(child: CircularProgressIndicator())
+                      : ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: latestLaporan.length,
+                          itemBuilder: (context, index) {
+                            return LaporanListItem(laporan: latestLaporan[index]);
+                          },
+                        ),
+                  const SizedBox(height: 80),
+                ],
               ),
-            ],
-          ),
+            ),
+          ]),
         ),
       ],
     );
@@ -108,10 +118,15 @@ class AdminHomePage extends StatelessWidget {
 // --- 3. KOMPONEN LAINNYA ---
 
 class SummaryCard extends StatelessWidget {
-  const SummaryCard({super.key});
+  final List<Laporan> laporanList;
+  const SummaryCard({super.key, required this.laporanList});
 
   @override
   Widget build(BuildContext context) {
+    int baru = laporanList.where((l) => l.status == 'Menunggu').length;
+    int diproses = laporanList.where((l) => l.status == 'Diproses').length;
+    int selesai = laporanList.where((l) => l.status == 'Selesai').length;
+    int ditolak = laporanList.where((l) => l.status == 'Ditolak').length;
     final primaryColor = Theme.of(context).primaryColor;
     return Container(
       padding: const EdgeInsets.all(16.0),
@@ -127,41 +142,26 @@ class SummaryCard extends StatelessWidget {
           ),
         ],
       ),
-      child: const Column(
+      child: Column(
         children: <Widget>[
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              Icon(Icons.description, color: Colors.white, size: 28),
-              SizedBox(width: 8),
-              Text(
-                'Rangkuman Laporan',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              const Icon(Icons.description, color: Colors.white, size: 28),
+              const SizedBox(width: 8),
+              const Text('Rangkuman Laporan', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
             ],
           ),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           Row(
             children: <Widget>[
-              Expanded(
-                child: SummaryItem(
-                  count: 5, // Data Dummy
-                  label: 'Laporan Baru',
-                  iconColor: Color(0xFFFFCC00), 
-                ),
-              ),
-              SizedBox(width: 15),
-              Expanded(
-                child: SummaryItem(
-                  count: 2, // Data Dummy
-                  label: 'Diproses',
-                  iconColor: Color(0xFFFF9500), 
-                ),
-              ),
+              Expanded(child: SummaryItem(count: baru, label: 'Laporan Baru', iconColor: const Color(0xFFFFCC00))),
+              const SizedBox(width: 15),
+              Expanded(child: SummaryItem(count: diproses, label: 'Diproses', iconColor: const Color(0xFFFF9500))),
+              const SizedBox(width: 15),
+              Expanded(child: SummaryItem(count: selesai, label: 'Selesai', iconColor: Colors.green)),
+              const SizedBox(width: 15),
+              Expanded(child: SummaryItem(count: ditolak, label: 'Ditolak', iconColor: Colors.red)),
             ],
           ),
         ],
@@ -558,7 +558,6 @@ class LaporanListItem extends StatelessWidget {
     );
   }
 }
-
 
 // --- NOTIFICATION FRAGMENT ---
 class NotificationFragment extends StatelessWidget {

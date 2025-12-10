@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Laporan {
   final String id;
@@ -48,19 +49,57 @@ final List<Laporan> laporanList = [
     statusColor: Colors.blue.shade700,
     imagePath: 'assets/images/jalan_rusak.png', // Ganti dengan path aset gambar Anda
   ),
-//   Laporan(
-//     id: 'LP-001',
-//     judul: 'Penumpukkan Sampah di Pasar',
-//     lokasi: 'Jl. Makassar',
-//     detailLokasi: 'Dekat terminal lama',
-//     deskripsi: 'Sampah menumpuk sudah 3 hari, menimbulkan bau tidak sedap.',
-//     kategori: 'Kebersihan',
-//     jenis: 'Publik',
-//     pelapor: 'Citra H.',
-//     status: 'Selesai',
-//     tanggal: '2025-10-09',
-//     statusColor: Colors.green.shade700,
-//     imagePath: 'assets/images/sampah_menumpuk.png',
-//   ),
-//   // ... Tambahkan data laporan lainnya
+  //   Laporan(
+  //     id: 'LP-001',
+  //     judul: 'Penumpukkan Sampah di Pasar',
+  //     lokasi: 'Jl. Makassar',
+  //     detailLokasi: 'Dekat terminal lama',
+  //     deskripsi: 'Sampah menumpuk sudah 3 hari, menimbulkan bau tidak sedap.',
+  //     kategori: 'Kebersihan',
+  //     jenis: 'Publik',
+  //     pelapor: 'Citra H.',
+  //     status: 'Selesai',
+  //     tanggal: '2025-10-09',
+  //     statusColor: Colors.green.shade700,
+  //     imagePath: 'assets/images/sampah_menumpuk.png',
+  //   ),
+  //   // ... Tambahkan data laporan lainnya
 ];
+
+Future<List<Laporan>> fetchLaporanList({String? userEmail, String? status}) async {
+  Query query = FirebaseFirestore.instance.collection('laporan').orderBy('createdAt', descending: true);
+  if (userEmail != null) {
+    query = query.where('pelapor', isEqualTo: userEmail);
+  }
+  if (status != null) {
+    query = query.where('status', isEqualTo: status);
+  }
+  final snapshot = await query.get();
+  return snapshot.docs.map((doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return Laporan(
+      id: data['id'] ?? doc.id,
+      judul: data['judul'] ?? '',
+      lokasi: data['lokasi'] ?? data['address'] ?? '',
+      detailLokasi: data['detail_lokasi'] ?? '',
+      deskripsi: data['deskripsi'] ?? '',
+      kategori: data['kategori'] ?? '',
+      jenis: data['jenis'] ?? '',
+      pelapor: data['pelapor'] ?? '',
+      status: data['status'] ?? '',
+      tanggal: (data['createdAt'] != null) ? DateTime.parse(data['createdAt']).toLocal().toString().substring(0, 10) : '',
+      statusColor: _getStatusColor(data['status']),
+      imagePath: data['imagePath'] ?? '',
+    );
+  }).toList();
+}
+
+Color _getStatusColor(String? status) {
+  switch (status) {
+    case 'Menunggu': return Colors.blue.shade700;
+    case 'Diproses': return Colors.orange.shade700;
+    case 'Selesai': return Colors.green.shade700;
+    case 'Ditolak': return Colors.red.shade700;
+    default: return Colors.grey;
+  }
+}

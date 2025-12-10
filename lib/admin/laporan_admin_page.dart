@@ -15,8 +15,23 @@ class LaporanAdminPage extends StatefulWidget {
 }
 
 class _LaporanAdminPageState extends State<LaporanAdminPage> {
-  // State untuk mengontrol tampilan pop-up filter
+  List<Laporan> _laporanList = [];
+  bool _loading = true;
   bool _showFilter = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchLaporan();
+  }
+
+  Future<void> _fetchLaporan() async {
+    final list = await fetchLaporanList();
+    setState(() {
+      _laporanList = list;
+      _loading = false;
+    });
+  }
 
   void _toggleFilter() {
     setState(() {
@@ -29,15 +44,13 @@ class _LaporanAdminPageState extends State<LaporanAdminPage> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-
         title: const Text(
           'Laporan',
           style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
       ),
-      body: Stack( // Gunakan Stack agar Pop-up filter bisa muncul di atas konten lain
+      body: Stack(
         children: [
-          // Konten Utama (Search Bar dan List Laporan)
           Column(
             children: [
               Padding(
@@ -45,20 +58,20 @@ class _LaporanAdminPageState extends State<LaporanAdminPage> {
                 child: SearchAndFilterBar(onFilterPressed: _toggleFilter),
               ),
               Expanded(
-                child: ListView.builder(
-                  itemCount: laporanList.length,
-                  itemBuilder: (context, index) {
-                    return LaporanListItem(laporan: laporanList[index]);
-                  },
-                ),
+                child: _loading
+                    ? const Center(child: CircularProgressIndicator())
+                    : ListView.builder(
+                        itemCount: _laporanList.length,
+                        itemBuilder: (context, index) {
+                          return LaporanListItem(laporan: _laporanList[index]);
+                        },
+                      ),
               ),
             ],
           ),
-
-          // Pop-up Filter (Hanya ditampilkan jika _showFilter = true)
           if (_showFilter)
             Positioned(
-              top: 70, // Sesuaikan posisi di bawah search bar
+              top: 70,
               right: 16,
               left: 16,
               child: FilterPopupCard(
@@ -104,7 +117,7 @@ class SearchAndFilterBar extends StatelessWidget {
           ),
           IconButton(
             icon: Icon(Icons.filter_list, color: Theme.of(context).primaryColor),
-            onPressed: onFilterPressed, // Panggil fungsi toggle filter
+            onPressed: onFilterPressed,
           ),
         ],
       ),
