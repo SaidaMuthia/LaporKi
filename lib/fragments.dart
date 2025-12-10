@@ -360,13 +360,13 @@ class AccountFragment extends StatelessWidget {
               Navigator.push(context, MaterialPageRoute(builder: (_) => const EditProfilePage()));
             }),
             _menuItem(context, icon: Icons.info_outline, title: "Tentang Aplikasi", onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => Placeholder()));
+              Navigator.push(context, MaterialPageRoute(builder: (_) => TentangAplikasiPage()));
             }),
             _menuItem(context, icon: Icons.privacy_tip_outlined, title: "Kebijakan Privasi", onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => Placeholder()));
+              Navigator.push(context, MaterialPageRoute(builder: (_) => KebijakanPrivasiPage()));
             }),
             _menuItem(context, icon: Icons.description_outlined, title: "Syarat dan Ketentuan", onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => Placeholder()));
+              Navigator.push(context, MaterialPageRoute(builder: (_) => SyaratKetentuanPage()));
             }),
 
             const Divider(),
