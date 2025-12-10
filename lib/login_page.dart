@@ -2,6 +2,10 @@ import 'package:laporki/onboarding_page.dart';
 import 'register_page.dart';
 import './user/user_dashboard.dart';
 import './admin/admin_dashboard.dart';
+import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'controllers/auth_controller.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -38,7 +42,7 @@ class _LoginPageState extends State<LoginPage> {
       );
 
       // 2. Cek Role di Firestore
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+      await FirebaseFirestore.instance
           .collection('users')
           .doc(userCredential.user!.uid)
           .get();

@@ -598,7 +598,7 @@ class AccountFragment extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String nama = userData?['nama_lengkap'] ?? '$nama!';
+    final String nama = userData?['nama_lengkap'] ?? 'Pengguna';
     return Scaffold(
       appBar: AppBar(
         title: Text(userData?['role'] == 'admin' ? "Akun Admin": "Akun Saya"),

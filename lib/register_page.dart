@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // Tambahkan ini
-import 'package:cloud_firestore/cloud_firestore.dart'; // Tambahkan ini
 import 'login_page.dart';
+import 'controllers/auth_controller.dart'; // Tambahkan ini
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
