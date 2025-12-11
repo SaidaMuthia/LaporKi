@@ -173,7 +173,7 @@ class _HomeFragmentState extends State<HomeFragment> {
   }
 
   Widget _buildStatusRow(List<Laporan> list) {
-    int diproses = list.where((l) => l.status == 'Diproses' || l.status == 'Menunggu').length;
+    int diproses = list.where((l) => l.status == 'Diproses').length;
     int selesai = list.where((l) => l.status == 'Selesai').length;
     int ditolak = list.where((l) => l.status == 'Ditolak').length;
     return Row(
@@ -318,7 +318,7 @@ class _LaporankuFragmentState extends State<LaporankuFragment> {
             : TabBarView(
                 children: [
                   _buildReportList(context, _laporanList),
-                  _buildReportList(context, _laporanList.where((l) => l.status == 'Diproses' || l.status == 'Menunggu').toList()),
+                  _buildReportList(context, _laporanList.where((l) => l.status == 'Diproses').toList()),
                   _buildReportList(context, _laporanList.where((l) => l.status == 'Selesai').toList()),
                   _buildReportList(context, _laporanList.where((l) => l.status == 'Ditolak').toList()),
                 ],
