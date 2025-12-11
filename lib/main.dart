@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart'; 
-
+import 'services/notification_service.dart';
 import 'onboarding_page.dart';
 import 'login_page.dart';
 import 'register_page.dart';
@@ -14,6 +14,11 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
  );
+
+  // --- TAMBAHKAN INI ---
+  final notificationService = NotificationService();
+  await notificationService.init();
+  // ---------------------
 
   runApp(const MyApp());
 }

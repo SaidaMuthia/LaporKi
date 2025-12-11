@@ -16,6 +16,8 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // --- PERBAIKAN 1: Aktifkan Desugaring ---
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -31,6 +33,9 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        
+        // Opsional: Jika error masih muncul, aktifkan multidex
+        multiDexEnabled = true 
     }
 
     buildTypes {
@@ -44,4 +49,9 @@ android {
 
 flutter {
     source = "../.."
+}
+
+// --- PERBAIKAN 2: Tambahkan Dependency Desugaring ---
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 }

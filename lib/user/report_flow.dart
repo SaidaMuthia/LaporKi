@@ -16,6 +16,9 @@ import 'dart:io';
 import 'package:latlong2/latlong.dart';
 import 'pick_map_page.dart';
 
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
 // --- 1. PERMISSION PAGE ---
 class LocationPermissionPage extends StatelessWidget {
   final ReportDraft? draft;
@@ -605,9 +608,45 @@ class ReviewReportPage extends StatefulWidget {
 class _ReviewReportPageState extends State<ReviewReportPage> {
   bool _isLoading = false;
 
+  // Fungsi manual kirim notif dari HP User ke HP Admin
+  Future<void> _sendPushNotificationToAdmin(String judul, String kategori) async {
+    try {
+      // GANTI DENGAN SERVER KEY DARI FIREBASE CONSOLE -> PROJECT SETTINGS -> CLOUD MESSAGING
+      // (Jika pakai FCM v1 API, caranya agak beda butuh OAuth, ini contoh Legacy API)
+      const String serverKey = "AAAA.... (Kunci Server Anda)"; 
+      
+      await http.post(
+        Uri.parse('https://fcm.googleapis.com/fcm/send'),
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+          'Authorization': 'key=$serverKey',
+        },
+        body: jsonEncode(
+          <String, dynamic>{
+            'notification': <String, dynamic>{
+              'body': '$judul - $kategori',
+              'title': 'Laporan Baru Masuk!',
+            },
+            'priority': 'high',
+            'data': <String, dynamic>{
+              'click_action': 'FLUTTER_NOTIFICATION_CLICK',
+              'id': '1',
+              'status': 'done'
+            },
+            'to': '/topics/admin_notif', // Kirim ke topik admin
+          },
+        ),
+      );
+      debugPrint("Push notif dikirim ke admin");
+    } catch (e) {
+      debugPrint("Gagal kirim push notif: $e");
+    }
+  }
+
   Future<void> _submitReport(BuildContext context) async {
     setState(() => _isLoading = true);
     
+
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       if (mounted) {
@@ -648,6 +687,10 @@ class _ReviewReportPageState extends State<ReviewReportPage> {
       // Asumsi: Laporan Model memiliki metode toMap() yang sesuai
       final dataToSave = newLaporan.toMap(); 
       await docRef.set(dataToSave);
+
+      // --- TAMBAHKAN INI ---
+      // Kirim push notif ke Admin
+      _sendPushNotificationToAdmin(widget.draft.judul ?? 'Laporan', widget.draft.kategori ?? 'Umum');
       
       // 4. Sukses: Navigasi ke Halaman Laporan Terkirim (ReportSentPage)
       if (mounted) {

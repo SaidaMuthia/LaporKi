@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:laporki/admin/fragments.dart'; // Pastikan file fragments ada di folder admin
+import 'package:laporki/services/notification_service.dart';
 
 class AdminDashboard extends StatefulWidget {
   final Map<String, dynamic>? userData;
@@ -19,6 +20,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
   void initState() {
     super.initState();
     _fetchAdminData();
+
+    NotificationService().subscribeToAdminTopic();
   }
 
   Future<void> _fetchAdminData() async {
