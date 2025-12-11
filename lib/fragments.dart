@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Import Auth untuk fallback email
-// Pastikan path import ini sesuai
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:laporki/admin/laporan_model.dart'; 
 import 'package:laporki/user/report_detail.dart'; 
 import 'package:laporki/profile_pages.dart';
 import 'package:laporki/user/report_flow.dart'; 
 
-// --- HOME FRAGMENT ---
+// HOME FRAGMENT
 class HomeFragment extends StatefulWidget {
   final Map<String, dynamic>? userData;
   const HomeFragment({super.key, this.userData});
@@ -81,7 +80,6 @@ class _HomeFragmentState extends State<HomeFragment> {
   @override
   Widget build(BuildContext context) {
     // SINKRONISASI NAMA DI SINI
-    // Mengambil nama_lengkap dari database, jika null pakai 'User'
     final String nama = widget.userData?['nama_lengkap'] ?? 'User';
     
     return CustomScrollView(
@@ -148,8 +146,6 @@ class _HomeFragmentState extends State<HomeFragment> {
     );
   }
 
-  // ... (Widget _buildBanner, _buildStatusRow, _buildStatusCard, _buildLaporanItem SAMA PERSIS SEPERTI SEBELUMNYA) ...
-  // Copy dari kode sebelumnya agar tidak kepanjangan di sini, desain tetap sama.
   Widget _buildBanner(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -242,7 +238,7 @@ class _HomeFragmentState extends State<HomeFragment> {
   }
 }
 
-// --- LAPORANKU FRAGMENT ---
+// LAPORANKU FRAGMENT
 class LaporankuFragment extends StatefulWidget {
   const LaporankuFragment({super.key});
 
@@ -251,9 +247,6 @@ class LaporankuFragment extends StatefulWidget {
 }
 
 class _LaporankuFragmentState extends State<LaporankuFragment> {
-  // ... (Logika Laporanku sama persis seperti sebelumnya) ...
-  // Saya persingkat di sini agar muat, gunakan kode LaporankuFragment dari jawaban sebelumnya
-  // Intinya: Logic fetch data + TabBar UI
   List<Laporan> _laporanList = [];
   bool _loading = true;
 
@@ -363,10 +356,7 @@ class _LaporankuFragmentState extends State<LaporankuFragment> {
   }
 }
 
-// --- NOTIFICATION FRAGMENT ---
-// ===============================================
-// 3. NOTIFICATION FRAGMENT (USER)
-// ===============================================
+// NOTIFICATION FRAGMENT
 class NotificationFragment extends StatelessWidget {
   const NotificationFragment({super.key});
 
@@ -390,16 +380,8 @@ class NotificationFragment extends StatelessWidget {
         elevation: 0,
       ),
       body: StreamBuilder<QuerySnapshot>(
-        // Logika: Ambil laporan milik user ini yang statusnya SUDAH DIRESPON (Tidak lagi 'Menunggu')
-        // Pastikan saat upload laporan, Anda menyimpan field 'userId' atau 'uid'
         stream: FirebaseFirestore.instance
             .collection('laporan')
-            // Opsi 1: Filter by ID (Disarankan jika ada field userId)
-            // .where('userId', isEqualTo: user.uid) 
-            // .where('status', whereIn: ['Diproses', 'Selesai', 'Ditolak'])
-            
-            // Opsi 2 (Fallback): Ambil semua lalu filter manual di client (jika data sedikit)
-            // Karena kita ingin notifikasi perubahan status, kita ambil yang statusnya bukan 'Menunggu'
             .where('status', whereIn: ['Diproses', 'Selesai', 'Ditolak'])
             .snapshots(),
         builder: (context, snapshot) {
@@ -414,20 +396,15 @@ class NotificationFragment extends StatelessWidget {
           }
 
           // Filter Manual & Sorting (Untuk memastikan data milik user ini saja)
-          // Asumsi: Kita memfilter berdasarkan nama pelapor atau ID jika tersedia
           final docs = snapshot.data!.docs.where((doc) {
              final data = doc.data() as Map<String, dynamic>;
-             // Coba cocokan userId jika ada, atau fallback ke nama/email jika struktur DB belum update
-             // Ganti logika ini sesuai field di database Anda
              bool isMyReport = false;
              if (data.containsKey('userId')) {
                isMyReport = data['userId'] == user.uid;
              } else if (data.containsKey('email')) {
                isMyReport = data['email'] == user.email;
              } else {
-               // Fallback terakhir (kurang aman): cocokan nama
-               // isMyReport = data['pelapor'] == user.displayName;
-               return true; // Sementara return true agar Anda bisa melihat hasilnya
+               return true;
              }
              return isMyReport;
           }).toList();
@@ -502,7 +479,7 @@ class NotificationFragment extends StatelessWidget {
                 jenis: data['jenis'] ?? 'Publik',
                 pelapor: data['pelapor'] ?? '-',
                 status: status,
-                tanggal: timeStr, // Display time
+                tanggal: timeStr,
                 statusColor: status == 'Selesai' ? Colors.green : (status == 'Ditolak' ? Colors.red : Colors.blue),
                 imagePath: data['imagePath'] ?? data['foto'] ?? 'assets/images/placeholder.png',
               );
@@ -551,7 +528,7 @@ class NotificationFragment extends StatelessWidget {
     );
   }
   
-  // Helper Widget untuk Empty State (Bisa ditaruh di luar class jika error)
+  // Helper Widget untuk Empty State
   Widget _buildEmptyState(String message) {
     return Center(
       child: Column(
@@ -566,7 +543,7 @@ class NotificationFragment extends StatelessWidget {
   }
 }
 
-// --- ACCOUNT FRAGMENT ---
+// ACCOUNT FRAGMENT
 class AccountFragment extends StatelessWidget {
   final Map<String, dynamic>? userData;
   const AccountFragment({super.key, this.userData});

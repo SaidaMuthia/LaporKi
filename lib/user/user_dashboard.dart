@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:laporki/fragments.dart'; // Pastikan import ini ada
+import 'package:laporki/fragments.dart';
 import 'report_draft.dart';
 import 'report_flow.dart';
 
@@ -22,7 +22,7 @@ class _UserDashboardState extends State<UserDashboard> {
   @override
   void initState() {
     super.initState();
-    _fetchUserData(); // Ambil data saat dashboard dibuka
+    _fetchUserData();
   }
 
   // Fungsi mengambil data user dari Firestore berdasarkan UID login
@@ -31,14 +31,13 @@ class _UserDashboardState extends State<UserDashboard> {
     if (user != null) {
       try {
         DocumentSnapshot doc = await FirebaseFirestore.instance
-            .collection('users') // Pastikan nama koleksi di Firebase Anda 'users'
+            .collection('users')
             .doc(user.uid)
             .get();
 
         if (doc.exists) {
           setState(() {
             _userData = doc.data() as Map<String, dynamic>;
-            // Pastikan email juga masuk (kadang di firestore tidak disimpan, jadi ambil dari Auth)
             if (_userData != null && !_userData!.containsKey('email')) {
               _userData!['email'] = user.email;
             }
@@ -54,20 +53,20 @@ class _UserDashboardState extends State<UserDashboard> {
   Widget _getSelectedPage(int index) {
     switch (index) {
       case 0:
-        return HomeFragment(userData: _userData); // Kirim data ke Home
+        return HomeFragment(userData: _userData);
       case 1:
         return const LaporankuFragment();
       case 2:
         return const NotificationFragment();
       case 3:
-        return AccountFragment(userData: _userData); // Kirim data ke Akun
+        return AccountFragment(userData: _userData);
       default:
         return HomeFragment(userData: _userData);
     }
   }
 
   void _onItemTapped(int index) {
-    if (index == 2) { // Index tombol tengah (Buat Laporan)
+    if (index == 2) {
        // Logika tombol tengah tetap sama
        Navigator.push(
         context,
@@ -96,15 +95,15 @@ class _UserDashboardState extends State<UserDashboard> {
             children: [
               _buildNavItem(Icons.home_filled, "Beranda", 0),
               _buildNavItem(Icons.assignment, "LaporanKu", 1),
-              const SizedBox(width: 48), // Spasi untuk FAB
-              _buildNavItem(Icons.notifications, "Notifikasi", 2), // Index internal 2
-              _buildNavItem(Icons.person, "Akun", 3), // Index internal 3
+              const SizedBox(width: 48),
+              _buildNavItem(Icons.notifications, "Notifikasi", 2),
+              _buildNavItem(Icons.person, "Akun", 3),
             ],
           ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _onItemTapped(2), // 2 adalah index tombol tengah
+        onPressed: () => _onItemTapped(2),
         backgroundColor: const Color(0xFF0055D4),
         shape: const CircleBorder(),
         child: const Icon(Icons.add, color: Colors.white, size: 30),
@@ -114,7 +113,6 @@ class _UserDashboardState extends State<UserDashboard> {
   }
 
   Widget _buildNavItem(IconData icon, String label, int index) {
-    // Penyesuaian index karena ada FAB di tengah
     int targetIndex = index > 1 ? index + 1 : index; 
     bool isSelected = _selectedIndex == index;
 

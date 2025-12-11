@@ -12,14 +12,11 @@ class RiwayatTindakLanjutScreen extends StatelessWidget {
     final String status = laporan?.status ?? 'Menunggu';
     final String tanggalLapor = laporan?.tanggal ?? '-';
 
-    // --- LOGIKA TIMELINE ---
-    // Kita susun urutannya dari BAWAH (Awal) ke ATAS (Terbaru)
-    // Tapi di ListView, kita render dari index 0, jadi kita susun urutan tampilannya (Terbaru di Atas)
+    // LOGIKA TIMELINE
     
     List<Map<String, dynamic>> timelineItems = [];
 
-    // 1. Item Paling Bawah (Selalu Ada): LAPORAN DITERIMA
-    // Ini item 'dasar' yang muncul saat laporan baru dibuat
+    // LAPORAN DITERIMA
     Map<String, dynamic> itemDiterima = {
       "judul": "Laporan Diterima",
       "deskripsi": "Laporan Anda telah berhasil terkirim dan tercatat di sistem kami. Menunggu konfirmasi admin.",
@@ -29,7 +26,7 @@ class RiwayatTindakLanjutScreen extends StatelessWidget {
       "isActive": true,
     };
 
-    // 2. Item Tengah: DIPROSES / DITINDAKLANJUTI
+    // DIPROSES / DITINDAKLANJUTI
     Map<String, dynamic> itemDiproses = {
       "judul": "Sedang Ditindaklanjuti",
       "deskripsi": "Laporan Anda sedang ditangani oleh petugas lapangan/dinas terkait.",
@@ -39,7 +36,7 @@ class RiwayatTindakLanjutScreen extends StatelessWidget {
       "isActive": true,
     };
 
-    // 3. Item Atas: SELESAI / DITOLAK
+    // SELESAI / DITOLAK
     Map<String, dynamic> itemSelesai = {
       "judul": "Laporan Selesai",
       "deskripsi": "Masalah telah selesai ditangani. Terima kasih atas partisipasi Anda.",
@@ -58,9 +55,7 @@ class RiwayatTindakLanjutScreen extends StatelessWidget {
       "isActive": true,
     };
 
-    // --- MENYUSUN LIST TAMPILAN ---
-    // Logic: Status yang lebih tinggi mencakup status di bawahnya
-    
+    // MENYUSUN LIST TAMPILAN
     if (status == 'Selesai') {
       timelineItems.add(itemSelesai);
       timelineItems.add(itemDiproses);
@@ -123,7 +118,7 @@ class RiwayatTindakLanjutScreen extends StatelessWidget {
                   return Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // --- Bagian Kiri: Garis & Icon ---
+                      // Bagian Kiri
                       Column(
                         children: [
                           // Icon Lingkaran
@@ -137,18 +132,18 @@ class RiwayatTindakLanjutScreen extends StatelessWidget {
                             ),
                             child: Icon(item['icon'], color: item['color'], size: 20),
                           ),
-                          // Garis Penghubung (Kecuali item terakhir)
+                          // Garis Penghubung
                           if (!isLastItem)
                             Container(
                               width: 2,
-                              height: 60, // Jarak antar item
+                              height: 60,
                               color: Colors.grey.shade300,
                             ),
                         ],
                       ),
                       const SizedBox(width: 16),
 
-                      // --- Bagian Kanan: Teks ---
+                      // Bagian Kanan
                       Expanded(
                         child: Padding(
                           padding: const EdgeInsets.only(top: 8.0, bottom: 30.0),

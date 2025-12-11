@@ -3,10 +3,8 @@ import 'package:laporki/user/user_dashboard.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'report_draft.dart';
-// Import yang diperlukan untuk ReportDetailPage dan Laporan Model
-import 'package:laporki/admin/laporan_model.dart'; // <--- PASTIKAN PATH INI BENAR
-import 'package:laporki/user/report_detail.dart'; // <--- PASTIKAN PATH INI BENAR
-// Import lainnya
+import 'package:laporki/admin/laporan_model.dart';
+import 'package:laporki/user/report_detail.dart';
 import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
@@ -15,11 +13,10 @@ import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
 import 'package:latlong2/latlong.dart';
 import 'pick_map_page.dart';
-
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-// --- 1. PERMISSION PAGE ---
+// PERMISSION PAGE
 class LocationPermissionPage extends StatelessWidget {
   final ReportDraft? draft;
   const LocationPermissionPage({super.key, this.draft});
@@ -111,7 +108,7 @@ class LocationPermissionPage extends StatelessWidget {
   }
 }
 
-// --- 2. CAMERA PAGE ---
+// CAMERA PAGE
 class CameraPage extends StatefulWidget {
   final ReportDraft draft;
   const CameraPage({super.key, required this.draft});
@@ -231,7 +228,7 @@ class _CameraPageState extends State<CameraPage> {
   }
 }
 
-// --- 3. REVIEW IMAGE PAGE ---
+// REVIEW IMAGE PAGE
 class ReviewImagePage extends StatelessWidget {
   final ReportDraft draft;
   const ReviewImagePage({super.key, required this.draft});
@@ -322,7 +319,7 @@ class ReviewImagePage extends StatelessWidget {
   }
 }
 
-// --- 4. SET LOCATION PAGE ---
+// SET LOCATION PAGE
 class SetLocationPage extends StatefulWidget {
   final ReportDraft draft;
   const SetLocationPage({super.key, required this.draft});
@@ -383,10 +380,9 @@ class _SetLocationPageState extends State<SetLocationPage> {
           children: [
             const Text("Lokasi Laporan", style: TextStyle(fontWeight: FontWeight.w500)),
             const SizedBox(height: 8),
-            // 2. Tombol Pilih Lewat Peta (BARU)
+            // Tombol Pilih Lewat Peta
             InkWell(
               onTap: () async {
-                // Buka halaman peta, tunggu hasilnya (latlong)
                 final LatLng? result = await Navigator.push(
                   context, 
                   MaterialPageRoute(builder: (_) => const PickMapPage())
@@ -478,7 +474,7 @@ class _SetLocationPageState extends State<SetLocationPage> {
   }
 }
 
-// --- 5. SET DETAILS PAGE ---
+// SET DETAILS PAGE
 class SetDetailsPage extends StatefulWidget {
   final ReportDraft draft;
   const SetDetailsPage({super.key, required this.draft});
@@ -596,7 +592,7 @@ class _SetDetailsPageState extends State<SetDetailsPage> {
   }
 }
 
-// --- 6. REVIEW & SUBMIT PAGE (DIUBAH MENJADI STATEFUL) ---
+// REVIEW & SUBMIT PAGE
 class ReviewReportPage extends StatefulWidget {
   final ReportDraft draft;
   const ReviewReportPage({super.key, required this.draft});
@@ -608,11 +604,8 @@ class ReviewReportPage extends StatefulWidget {
 class _ReviewReportPageState extends State<ReviewReportPage> {
   bool _isLoading = false;
 
-  // Fungsi manual kirim notif dari HP User ke HP Admin
   Future<void> _sendPushNotificationToAdmin(String judul, String kategori) async {
     try {
-      // GANTI DENGAN SERVER KEY DARI FIREBASE CONSOLE -> PROJECT SETTINGS -> CLOUD MESSAGING
-      // (Jika pakai FCM v1 API, caranya agak beda butuh OAuth, ini contoh Legacy API)
       const String serverKey = "AAAA.... (Kunci Server Anda)"; 
       
       await http.post(
@@ -633,7 +626,7 @@ class _ReviewReportPageState extends State<ReviewReportPage> {
               'id': '1',
               'status': 'done'
             },
-            'to': '/topics/admin_notif', // Kirim ke topik admin
+            'to': '/topics/admin_notif',
           },
         ),
       );
@@ -659,15 +652,12 @@ class _ReviewReportPageState extends State<ReviewReportPage> {
     final pelapor = user.email ?? user.uid;
     
     try {
-      // 1. Tentukan ID Laporan baru
+      // Tentukan ID Laporan baru
       final docRef = FirebaseFirestore.instance.collection('laporan').doc();
       final laporanId = docRef.id;
       
-      // Catatan: Logika upload gambar ke Firebase Storage diabaikan di sini 
-      // untuk fokus pada data passing, namun harus diimplementasikan secara riil.
       String? imageUrl = widget.draft.imageFile != null ? 'path/to/uploaded/image.jpg' : null; 
       
-      // 2. Buat objek Laporan lengkap (Asumsi: Anda punya Laporan Model yang bisa di-import)
       final newLaporan = Laporan(
         id: laporanId,
         judul: widget.draft.judul ?? '',
@@ -678,26 +668,24 @@ class _ReviewReportPageState extends State<ReviewReportPage> {
         jenis: widget.draft.jenis ?? '',
         pelapor: pelapor,
         status: 'Menunggu',
-        tanggal: DateTime.now().toString().substring(0, 10), // Format tanggal sederhana
-        statusColor: const Color(0xFF005AC2), // Warna status 'Baru'
+        tanggal: DateTime.now().toString().substring(0, 10),
+        statusColor: const Color(0xFF005AC2),
         imagePath: imageUrl ?? (widget.draft.imageFile?.path ?? 'assets/images/placeholder.png'),
       );
 
-      // 3. Simpan ke Firestore
-      // Asumsi: Laporan Model memiliki metode toMap() yang sesuai
+      //  Simpan ke Firestore
       final dataToSave = newLaporan.toMap(); 
       await docRef.set(dataToSave);
 
-      // --- TAMBAHKAN INI ---
       // Kirim push notif ke Admin
       _sendPushNotificationToAdmin(widget.draft.judul ?? 'Laporan', widget.draft.kategori ?? 'Umum');
       
-      // 4. Sukses: Navigasi ke Halaman Laporan Terkirim (ReportSentPage)
+      // Navigasi ke Halaman Laporan Terkirim
       if (mounted) {
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => ReportSentPage(newLaporan: newLaporan)), 
-          (route) => route.isFirst, // Kembali ke root (Dashboard)
+          (route) => route.isFirst,
         );
       }
 
@@ -746,7 +734,7 @@ class _ReviewReportPageState extends State<ReviewReportPage> {
             ),
             const SizedBox(height: 20),
 
-            // Item-item Review (FIXED: Menggunakan data dari draft)
+            // Item-item Review
             _buildReviewItem("Judul Laporan", widget.draft.judul ?? '-'),
             _buildReviewItem("Lokasi Laporan", widget.draft.address ?? '-'),
             _buildReviewItem("Detail Lokasi Laporan", widget.draft.detailLokasi ?? '-'),
@@ -815,7 +803,7 @@ class _ReviewReportPageState extends State<ReviewReportPage> {
   }
 }
 
-// --- 7. LAPORAN TERKIRIM (ReportSentPage) - BARU ---
+// LAPORAN TERKIRIM
 class ReportSentPage extends StatelessWidget {
   final Laporan newLaporan;
   
@@ -849,7 +837,7 @@ class ReportSentPage extends StatelessWidget {
               ),
               const SizedBox(height: 40),
               
-              // TOMBOL TINJAU LAPORAN DIPERBAIKI: Navigasi ke detail laporan yang baru
+              // Navigasi ke detail laporan yang baru
               SizedBox(
                 width: double.infinity,
                 height: 50,
@@ -858,7 +846,7 @@ class ReportSentPage extends StatelessWidget {
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => ReportDetailPage(laporan: newLaporan), // <-- Meneruskan objek laporan yang baru
+                        builder: (context) => ReportDetailPage(laporan: newLaporan),
                       ),
                     );
                   },
@@ -877,7 +865,6 @@ class ReportSentPage extends StatelessWidget {
                 height: 50,
                 child: TextButton(
                   onPressed: () {
-                    // Kembali ke dashboard (rute pertama)
                     Navigator.of(context).popUntil((route) => route.isFirst);
                   },
                   child: const Text('Kembali ke Beranda', style: TextStyle(color: Colors.grey)),

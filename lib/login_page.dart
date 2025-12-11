@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
-// --- PERBAIKAN IMPORT ---
-import 'onboarding_page.dart'; // Gunakan relative import agar lebih aman
+import 'onboarding_page.dart';
 import 'register_page.dart';
 import './user/user_dashboard.dart';
 import './admin/admin_dashboard.dart';
-// import 'controllers/auth_controller.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -21,7 +18,7 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _showPassword = false;
-  bool _rememberMe = false; // Note: Logic Remember Me belum diimplementasi sepenuhnya
+  bool _rememberMe = false;
   bool _isLoading = false;
 
   @override
@@ -31,20 +28,19 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  // --- LOGIKA LOGIN FIREBASE ---
+  // LOGIKA LOGIN FIREBASE
   Future<void> signIn() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
     try {
-      // 1. Login Auth
+      //Login Auth
       UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
 
-      // 2. Cek Role di Firestore
-      // (Opsional: Kita cek dokumen user untuk memastikan role-nya)
+      // Cek Role di Firestore
       DocumentSnapshot userDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(userCredential.user!.uid)
@@ -62,14 +58,12 @@ class _LoginPageState extends State<LoginPage> {
             MaterialPageRoute(builder: (_) => const AdminDashboard()),
           );
         } else {
-          // PERBAIKAN: UserDashboard dipanggil TANPA parameter userData
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => const UserDashboard()), 
           );
         }
       } else {
-        // Jika data user tidak ada di Firestore tapi login berhasil (jarang terjadi)
         Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => const UserDashboard()), 

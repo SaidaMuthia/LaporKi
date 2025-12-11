@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-// Pastikan path import model ini benar
 import 'package:laporki/admin/laporan_model.dart'; 
 import 'package:laporki/admin/riwayat_tindak_lanjut_screen.dart';
 import 'package:laporki/admin/lihat_gambar_screen.dart';
 
 class ReportDetailPage extends StatelessWidget {
-  // 1. KEMBALIKAN KE MODEL: Terima objek Laporan
+  // Terima objek Laporan
   final Laporan laporan;
 
   const ReportDetailPage({super.key, required this.laporan});
@@ -32,7 +31,7 @@ class ReportDetailPage extends StatelessWidget {
     );
   }
 
-  // Helper: Widget untuk Detail Info
+  // Widget untuk Detail Info
   Widget _buildDetailInfo(String title, String content, {bool isLocked = true}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 20.0),
@@ -67,7 +66,7 @@ class ReportDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Logika gambar (Network vs Asset)
+    // Logika gambar
     Widget imageWidget;
     if (laporan.imagePath.startsWith('http')) {
        imageWidget = Image.network(
@@ -107,7 +106,7 @@ class ReportDetailPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. Gambar Laporan
+            // Gambar Laporan
             GestureDetector(
               onTap: () => _viewFullImage(context),
               child: Stack(
@@ -119,7 +118,7 @@ class ReportDetailPage extends StatelessWidget {
               ),
             ),
             
-            // 2. Informasi Detail
+            // Informasi Detail
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
@@ -161,7 +160,7 @@ class ReportDetailPage extends StatelessWidget {
         ),
       ),
       
-      // 3. Tombol Bawah
+      // Tombol Bawah
       bottomSheet: Container(
         padding: const EdgeInsets.all(16.0),
         width: double.infinity,

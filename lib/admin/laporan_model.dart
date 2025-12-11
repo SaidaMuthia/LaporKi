@@ -14,7 +14,7 @@ class Laporan {
   final String tanggal;
   final Color statusColor;
   final String imagePath;
-  final Timestamp? createdAt; // Field untuk sorting di Firebase
+  final Timestamp? createdAt;
 
   Laporan({
     required this.id,
@@ -32,7 +32,6 @@ class Laporan {
     this.createdAt,
   });
 
-  // --- 1. Konversi ke Map (PENTING untuk Simpan ke Firebase) ---
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -46,19 +45,15 @@ class Laporan {
       'status': status,
       'tanggal': tanggal,
       'imagePath': imagePath,
-      // Gunakan createdAt yang ada atau buat baru (waktu sekarang)
       'createdAt': createdAt ?? FieldValue.serverTimestamp(),
-      // statusColor TIDAK disimpan ke database karena itu logika UI
     };
   }
 
-  // --- 2. Factory dari Map (Opsional: Mempermudah pengambilan data) ---
-  // Ini membantu agar kode di fragments.dart lebih bersih
+  // Factory dari Map
   factory Laporan.fromMap(String docId, Map<String, dynamic> data) {
     // Helper format tanggal
     String formatTanggal(dynamic val) {
       if (val is Timestamp) {
-        // Ubah timestamp jadi string tanggal (YYYY-MM-DD) atau format lain
         DateTime dt = val.toDate();
         return "${dt.day}-${dt.month}-${dt.year}"; 
       }

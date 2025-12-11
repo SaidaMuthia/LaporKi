@@ -23,11 +23,11 @@ class OnboardingPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: primaryBlue,
       body: SingleChildScrollView( 
-        child: ConstrainedBox( // 1. Ganti Container dengan ConstrainedBox
+        child: ConstrainedBox(
           constraints: BoxConstraints(
-            minHeight: screenHeight, // 2. Gunakan minHeight agar bisa scroll jika konten panjang
+            minHeight: screenHeight,
           ),
-          child: Padding( // 3. Pindahkan padding ke sini
+          child: Padding(
             padding: const EdgeInsets.all(40.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,

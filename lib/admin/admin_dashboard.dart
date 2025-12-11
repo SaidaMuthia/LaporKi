@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:laporki/admin/fragments.dart'; // Pastikan file fragments ada di folder admin
+import 'package:laporki/admin/fragments.dart';
 import 'package:laporki/services/notification_service.dart';
 
 class AdminDashboard extends StatefulWidget {
@@ -51,7 +51,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    // List halaman
     final List<Widget> pages = [
       AdminHomePage(userData: _adminData), 
       const LaporanAdminPage(),

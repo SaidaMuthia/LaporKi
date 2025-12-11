@@ -2,7 +2,7 @@ import 'dart:io';
 
 class ReportDraft {
   File? imageFile;
-  String? imageUrl; // For web or after upload
+  String? imageUrl;
   double? latitude;
   double? longitude;
   String? address;

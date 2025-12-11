@@ -1,12 +1,8 @@
-// lib/admin/laporan_admin_page.dart
-
 import 'package:flutter/material.dart';
 import 'laporan_model.dart';
 import 'detail_laporan_screen.dart';
 
-// ===============================================
 // Halaman Utama Laporan Admin
-// ===============================================
 class LaporanAdminPage extends StatefulWidget {
   const LaporanAdminPage({super.key});
 
@@ -84,9 +80,7 @@ class _LaporanAdminPageState extends State<LaporanAdminPage> {
   }
 }
 
-// ===============================================
 // Search Bar dan Ikon Filter
-// ===============================================
 class SearchAndFilterBar extends StatelessWidget {
   final VoidCallback onFilterPressed;
 
@@ -125,9 +119,7 @@ class SearchAndFilterBar extends StatelessWidget {
   }
 }
 
-// ===============================================
 // Pop-up Card Filter
-// ===============================================
 class FilterPopupCard extends StatelessWidget {
   final VoidCallback onClose;
 
@@ -175,7 +167,7 @@ class FilterPopupCard extends StatelessWidget {
             TextButton(
               onPressed: () {
                 // Logika bersihkan filter
-                onClose(); // Tutup pop-up setelah dibersihkan
+                onClose();
               },
               child: const Text('Bersihkan Filter', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
@@ -186,9 +178,7 @@ class FilterPopupCard extends StatelessWidget {
   }
 }
 
-// ===============================================
 // Dropdown Filter Reusable
-// ===============================================
 class FilterDropdown extends StatelessWidget {
   final String label;
 
@@ -213,9 +203,7 @@ class FilterDropdown extends StatelessWidget {
   }
 }
 
-// ===============================================
 // Filter Tanggal Reusable
-// ===============================================
 class FilterTanggal extends StatelessWidget {
   final String label;
 
@@ -240,9 +228,7 @@ class FilterTanggal extends StatelessWidget {
   }
 }
 
-// ===============================================
-// Laporan List Item (Disalin dari admin_dashboard.dart, sedikit dimodifikasi)
-// ===============================================
+// Laporan List Item
 class LaporanListItem extends StatelessWidget {
   final Laporan laporan;
   

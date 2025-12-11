@@ -15,10 +15,8 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
  );
 
-  // --- TAMBAHKAN INI ---
   final notificationService = NotificationService();
   await notificationService.init();
-  // ---------------------
 
   runApp(const MyApp());
 }
@@ -32,7 +30,6 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'LaporKi',
       theme: ThemeData(
-        // ... (Theme Data tetap sama) ...
         primaryColor: const Color(0xFF005AC2),
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF005AC2),

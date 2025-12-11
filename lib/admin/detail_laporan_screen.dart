@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // Import Firestore
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'riwayat_tindak_lanjut_screen.dart';
 import 'lihat_gambar_screen.dart'; 
 import 'laporan_model.dart';
@@ -15,15 +15,14 @@ class DetailLaporanScreen extends StatefulWidget {
 class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
   String? _selectedStatus;
   final TextEditingController _catatanController = TextEditingController();
-  bool _isLoading = false; // Untuk loading saat simpan
+  bool _isLoading = false;
 
-  // Status opsi (Pastikan stringnya sama persis dengan yang dipakai di filter)
+  // Status opsi
   final List<String> _statusOptions = ['Menunggu', 'Diproses', 'Selesai', 'Ditolak'];
 
   @override
   void initState() {
     super.initState();
-    // Set status awal sesuai data laporan
     _selectedStatus = widget.laporan.status; 
   }
 
@@ -51,22 +50,20 @@ class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
     );
   }
 
-  // --- LOGIKA UTAMA SINKRONISASI ---
+  // LOGIKA UTAMA SINKRONISASI
   Future<void> _saveTindakLanjut() async {
     setState(() => _isLoading = true);
 
     try {
-      // 1. UPDATE Status Laporan di Database Utama
+      // UPDATE Status Laporan di Database Utama
       await FirebaseFirestore.instance.collection('laporan').doc(widget.laporan.id).update({
         'status': _selectedStatus,
-        'catatan_terakhir': _catatanController.text, // Menyimpan catatan admin (opsional)
-        // Kita tidak mengubah 'createdAt', agar urutan tidak berantakan
+        'catatan_terakhir': _catatanController.text,
       });
 
-      // 2. BUAT NOTIFIKASI UNTUK USER
-      // Kita buat koleksi baru bernama 'notifications'
+      // BUAT NOTIFIKASI UNTUK USER
       await FirebaseFirestore.instance.collection('notifications').add({
-        'to_user': widget.laporan.pelapor, // Email/ID user pemilik laporan
+        'to_user': widget.laporan.pelapor,
         'title': 'Status Laporan Diperbarui',
         'body': 'Laporan "${widget.laporan.judul}" statusnya berubah menjadi $_selectedStatus.',
         'laporan_id': widget.laporan.id,
@@ -79,7 +76,7 @@ class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Status berhasil diperbarui & Notifikasi dikirim ke User!')),
         );
-        Navigator.pop(context); // Kembali ke list
+        Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
@@ -180,7 +177,7 @@ class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     ),
-                    value: _selectedStatus, // Menggunakan value, bukan initialValue agar reaktif
+                    value: _selectedStatus,
                     hint: const Text('Pilih Status'),
                     items: _statusOptions.map((String status) {
                       return DropdownMenuItem<String>(

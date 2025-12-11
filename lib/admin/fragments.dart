@@ -2,14 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-// Pastikan path import ini sesuai dengan project Anda
 import 'package:laporki/admin/laporan_model.dart';
 import 'package:laporki/admin/detail_laporan_screen.dart';
 import 'package:laporki/profile_pages.dart'; 
 
-// ===============================================
-// 1. ADMIN HOME FRAGMENT (DASHBOARD)
-// ===============================================
+// 1. ADMIN HOME FRAGMENT
 class AdminHomePage extends StatelessWidget {
   final Map<String, dynamic>? userData;
   const AdminHomePage({super.key, this.userData});
@@ -43,7 +40,7 @@ class AdminHomePage extends StatelessWidget {
 
             return CustomScrollView(
               slivers: [
-                // Header / AppBar
+                // AppBar
                 SliverAppBar(
                   pinned: true,
                   toolbarHeight: 80,
@@ -118,9 +115,7 @@ class AdminHomePage extends StatelessWidget {
   }
 }
 
-// ===============================================
-// 2. LAPORAN ADMIN FRAGMENT (FILTER)
-// ===============================================
+// 2. LAPORAN ADMIN FRAGMENT
 class LaporanAdminPage extends StatefulWidget {
   const LaporanAdminPage({super.key});
 
@@ -201,7 +196,6 @@ class _LaporanListStream extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // TIPS: Gunakan order manual jika query complex belum diindex
     Query query = FirebaseFirestore.instance.collection('laporan');
     if (filterStatus != null) {
       query = query.where('status', isEqualTo: filterStatus);
@@ -220,8 +214,7 @@ class _LaporanListStream extends StatelessWidget {
         // 1. Ambil Data
         var docs = snapshot.data!.docs;
 
-        // 2. Sorting Manual (CreatedAt Descending)
-        // Ini menghindari error "Missing Index" di Firestore
+        // 2. Sorting Manual
         docs.sort((a, b) {
           final t1 = a['createdAt'] as Timestamp?;
           final t2 = b['createdAt'] as Timestamp?;
@@ -229,7 +222,7 @@ class _LaporanListStream extends StatelessWidget {
           return t2.compareTo(t1); // Descending (Terbaru di atas)
         });
 
-        // 3. Filter Search (Lokal)
+        // 3. Filter Search
         final filteredDocs = docs.where((doc) {
           final data = doc.data() as Map<String, dynamic>;
           final judul = (data['judul'] ?? '').toString().toLowerCase();
@@ -252,9 +245,7 @@ class _LaporanListStream extends StatelessWidget {
   }
 }
 
-// ===============================================
-// 3. NOTIFICATION FRAGMENT (PERBAIKAN FITUR)
-// ===============================================
+// 3. NOTIFICATION FRAGMENT
 class NotificationFragment extends StatelessWidget {
   const NotificationFragment({super.key});
 
@@ -269,8 +260,6 @@ class NotificationFragment extends StatelessWidget {
         elevation: 0,
       ),
       body: StreamBuilder<QuerySnapshot>(
-        // PERBAIKAN: Hapus orderBy di query ini untuk menghindari error Index.
-        // Kita hanya filter status 'Baru', lalu sort manual di bawah.
         stream: FirebaseFirestore.instance
             .collection('laporan')
             .where('status', isEqualTo: 'Menunggu') 
@@ -362,9 +351,7 @@ class NotificationFragment extends StatelessWidget {
   }
 }
 
-// ===============================================
 // 4. ACCOUNT FRAGMENT
-// ===============================================
 class AccountFragment extends StatelessWidget {
   final Map<String, dynamic>? userData;
   const AccountFragment({super.key, this.userData});
@@ -431,10 +418,7 @@ class AccountFragment extends StatelessWidget {
   }
 }
 
-// ===============================================
 // HELPER FUNCTIONS & WIDGETS
-// ===============================================
-
 Widget _buildEmptyState(String message) {
   return Center(
     child: Column(
@@ -584,6 +568,6 @@ Laporan _mapToLaporan(String id, Map<String, dynamic> data) {
     tanggal: formatDate(data['createdAt'] ?? data['tanggal']),
     statusColor: getStatusColor(data['status']),
     imagePath: data['imagePath'] ?? data['foto'] ?? 'assets/images/placeholder.png',
-    createdAt: data['createdAt'] as Timestamp?, // Mengisi field timestamp
+    createdAt: data['createdAt'] as Timestamp?,
   );
 } 

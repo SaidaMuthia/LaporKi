@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Tambahkan ini
+import 'package:firebase_auth/firebase_auth.dart';
 import 'login_page.dart';
-import 'controllers/auth_controller.dart'; // Tambahkan ini
+import 'controllers/auth_controller.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -11,7 +11,6 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
-  // Controller
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _nikController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
@@ -24,7 +23,6 @@ class _RegisterPageState extends State<RegisterPage> {
   bool _rememberMe = false;
   bool _isLoading = false;
 
-  // --- LOGIKA REGISTER YANG DIPERBAIKI ---
   Future<void> registerUser() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -110,7 +108,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
                 const SizedBox(height: 20),
 
-                // TAB SWITCH (Desain tetap sama)
+                // TAB SWITCH
                 Container(
                   height: 50,
                   decoration: BoxDecoration(

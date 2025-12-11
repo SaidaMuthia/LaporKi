@@ -2,7 +2,6 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/material.dart';
 
-// Handler untuk notifikasi saat aplikasi ditutup/background
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   debugPrint("Handling a background message: ${message.messageId}");
@@ -12,9 +11,8 @@ class NotificationService {
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
 
-  // Inisialisasi Service
   Future<void> init() async {
-    // 1. Request Permission (Penting untuk Android 13+ dan iOS)
+    // Request Permission
     NotificationSettings settings = await _firebaseMessaging.requestPermission(
       alert: true,
       badge: true,
@@ -25,17 +23,17 @@ class NotificationService {
       debugPrint('User granted permission');
     }
 
-    // 2. Setup Local Notifications (Agar notif muncul pop-up saat aplikasi sedang dibuka)
+    // Setup Local Notifications
     const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     const DarwinInitializationSettings iosSettings = DarwinInitializationSettings();
     const InitializationSettings initSettings = InitializationSettings(android: androidSettings, iOS: iosSettings);
 
     await _localNotifications.initialize(initSettings);
 
-    // 3. Setup Handler Background
+    // Setup Handler Background
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-    // 4. Setup Handler Foreground (Aplikasi sedang aktif)
+    // Setup Handler Foreground
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       debugPrint('Got a message whilst in the foreground!');
       debugPrint('Message data: ${message.data}');
@@ -61,7 +59,7 @@ class NotificationService {
     });
   }
 
-  // --- FUNGSI KHUSUS ADMIN ---
+  // FUNGSI KHUSUS ADMIN
   // Admin akan subscribe ke topik "admin_notif"
   // Jadi setiap ada laporan baru, server cukup kirim ke topik ini, semua admin dapat.
   Future<void> subscribeToAdminTopic() async {
@@ -69,7 +67,7 @@ class NotificationService {
     debugPrint("Subscribed to admin_notif topic");
   }
   
-  // Jika user logout, unsubscribe (opsional)
+  // Jika user logout, unsubscribe
   Future<void> unsubscribeAdminTopic() async {
     await _firebaseMessaging.unsubscribeFromTopic('admin_notif');
   }

@@ -7,7 +7,7 @@ class LihatGambarScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black, // Background gelap untuk melihat gambar
+      backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
         iconTheme: const IconThemeData(color: Colors.white),
@@ -16,7 +16,7 @@ class LihatGambarScreen extends StatelessWidget {
       body: Center(
         child: Image.asset(
           imagePath,
-          fit: BoxFit.contain, // Memastikan gambar penuh terlihat tanpa terpotong
+          fit: BoxFit.contain,
         ),
       ),
     );
