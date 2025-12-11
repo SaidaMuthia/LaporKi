@@ -1,11 +1,13 @@
-import 'package:laporki/onboarding_page.dart';
-import 'register_page.dart';
-import './user/user_dashboard.dart';
-import './admin/admin_dashboard.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'controllers/auth_controller.dart';
+
+// --- PERBAIKAN IMPORT ---
+import 'onboarding_page.dart'; // Gunakan relative import agar lebih aman
+import 'register_page.dart';
+import './user/user_dashboard.dart';
+import './admin/admin_dashboard.dart';
+// import 'controllers/auth_controller.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -19,7 +21,7 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _showPassword = false;
-  bool _rememberMe = false;
+  bool _rememberMe = false; // Note: Logic Remember Me belum diimplementasi sepenuhnya
   bool _isLoading = false;
 
   @override
@@ -42,43 +44,55 @@ class _LoginPageState extends State<LoginPage> {
       );
 
       // 2. Cek Role di Firestore
-      await FirebaseFirestore.instance
+      // (Opsional: Kita cek dokumen user untuk memastikan role-nya)
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(userCredential.user!.uid)
           .get();
 
-      // Ambil data user dari Firestore
-      final userData = await AuthController().getCurrentUserData();
       if (!mounted) return;
-      if (userData == null) throw Exception('Data user tidak ditemukan');
-      if (userData['role'] == 'admin') {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const AdminDashboard()),
-        );
+
+      if (userDoc.exists) {
+        Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
+        String role = userData['role'] ?? 'user';
+
+        if (role == 'admin') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const AdminDashboard()),
+          );
+        } else {
+          // PERBAIKAN: UserDashboard dipanggil TANPA parameter userData
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const UserDashboard()), 
+          );
+        }
       } else {
+        // Jika data user tidak ada di Firestore tapi login berhasil (jarang terjadi)
         Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => UserDashboard(userData: userData)),
+            context,
+            MaterialPageRoute(builder: (_) => const UserDashboard()), 
         );
       }
+
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Login Gagal: $e")));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
   String? _emailValidator(String? value) {
-    if (value == null || value.isEmpty) return 'Please enter your email';
+    if (value == null || value.isEmpty) return 'Masukkan email Anda';
     final regex = RegExp(r'^[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}$');
-    if (!regex.hasMatch(value)) return 'Please enter a valid email';
+    if (!regex.hasMatch(value)) return 'Masukkan format email yang benar';
     return null;
   }
 
   String? _passwordValidator(String? value) {
-    if (value == null || value.isEmpty) return 'Please enter your password';
-    if (value.length < 6) return 'Password must be at least 6 characters';
+    if (value == null || value.isEmpty) return 'Masukkan kata sandi';
+    if (value.length < 6) return 'Kata sandi minimal 6 karakter';
     return null;
   }
 
@@ -91,9 +105,9 @@ class _LoginPageState extends State<LoginPage> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => const OnboardingPage()),
-            )
+            context,
+            MaterialPageRoute(builder: (_) => const OnboardingPage()),
+          )
         ),
         backgroundColor: Colors.white,
         elevation: 0,
