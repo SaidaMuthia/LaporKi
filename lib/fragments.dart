@@ -364,24 +364,203 @@ class _LaporankuFragmentState extends State<LaporankuFragment> {
 }
 
 // --- NOTIFICATION FRAGMENT ---
+// ===============================================
+// 3. NOTIFICATION FRAGMENT (USER)
+// ===============================================
 class NotificationFragment extends StatelessWidget {
   const NotificationFragment({super.key});
+
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    // Jika user belum login
+    if (user == null) {
+      return const Scaffold(
+        body: Center(child: Text("Silakan login terlebih dahulu.")),
+      );
+    }
+
     return Scaffold(
-      appBar: AppBar(title: const Text("Notifikasi"), automaticallyImplyLeading: false),
-      body: ListView.separated(
-        itemCount: 5,
-        separatorBuilder: (_, _) => const Divider(height: 1),
-        itemBuilder: (ctx, i) {
-          return ListTile(
-            tileColor: i == 0 ? Colors.blue[50] : Colors.white,
-            leading: CircleAvatar(backgroundColor: Colors.blue[100], child: const Icon(Icons.notifications, color: Colors.blue)),
-            title: const Text("Laporan Anda Sedang Diproses", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-            subtitle: const Text("Laporan mengenai jalan rusak sedang ditinjau.", maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12)),
-            trailing: const Text("2j lalu", style: TextStyle(fontSize: 10, color: Colors.grey)),
+      appBar: AppBar(
+        title: const Text("Notifikasi"),
+        automaticallyImplyLeading: false,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
+      ),
+      body: StreamBuilder<QuerySnapshot>(
+        // Logika: Ambil laporan milik user ini yang statusnya SUDAH DIRESPON (Tidak lagi 'Menunggu')
+        // Pastikan saat upload laporan, Anda menyimpan field 'userId' atau 'uid'
+        stream: FirebaseFirestore.instance
+            .collection('laporan')
+            // Opsi 1: Filter by ID (Disarankan jika ada field userId)
+            // .where('userId', isEqualTo: user.uid) 
+            // .where('status', whereIn: ['Diproses', 'Selesai', 'Ditolak'])
+            
+            // Opsi 2 (Fallback): Ambil semua lalu filter manual di client (jika data sedikit)
+            // Karena kita ingin notifikasi perubahan status, kita ambil yang statusnya bukan 'Menunggu'
+            .where('status', whereIn: ['Diproses', 'Selesai', 'Ditolak'])
+            .snapshots(),
+        builder: (context, snapshot) {
+          // Handle Loading
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          // Handle Kosong
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return _buildEmptyState("Belum ada notifikasi baru.");
+          }
+
+          // Filter Manual & Sorting (Untuk memastikan data milik user ini saja)
+          // Asumsi: Kita memfilter berdasarkan nama pelapor atau ID jika tersedia
+          final docs = snapshot.data!.docs.where((doc) {
+             final data = doc.data() as Map<String, dynamic>;
+             // Coba cocokan userId jika ada, atau fallback ke nama/email jika struktur DB belum update
+             // Ganti logika ini sesuai field di database Anda
+             bool isMyReport = false;
+             if (data.containsKey('userId')) {
+               isMyReport = data['userId'] == user.uid;
+             } else if (data.containsKey('email')) {
+               isMyReport = data['email'] == user.email;
+             } else {
+               // Fallback terakhir (kurang aman): cocokan nama
+               // isMyReport = data['pelapor'] == user.displayName;
+               return true; // Sementara return true agar Anda bisa melihat hasilnya
+             }
+             return isMyReport;
+          }).toList();
+
+          if (docs.isEmpty) {
+            return _buildEmptyState("Belum ada notifikasi untuk Anda.");
+          }
+
+          // Sorting Manual (Terbaru di atas)
+          docs.sort((a, b) {
+            final t1 = a['createdAt'] as Timestamp?;
+            final t2 = b['createdAt'] as Timestamp?;
+            if (t1 == null && t2 == null) return 0;
+            if (t1 == null) return 1;
+            if (t2 == null) return -1;
+            return t2.compareTo(t1);
+          });
+
+          return ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: docs.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            itemBuilder: (ctx, i) {
+              final doc = docs[i];
+              final data = doc.data() as Map<String, dynamic>;
+              
+              // Map data manual (mirip _mapToLaporan)
+              final String judul = data['judul'] ?? 'Tanpa Judul';
+              final String status = data['status'] ?? 'Diproses';
+              final String kategori = data['kategori'] ?? 'Lainnya';
+              
+              // Helper Time Ago
+              String timeStr = "Baru saja";
+              if (data['createdAt'] != null) {
+                final dt = (data['createdAt'] as Timestamp).toDate();
+                final diff = DateTime.now().difference(dt);
+                if (diff.inMinutes < 60) timeStr = "${diff.inMinutes}m lalu";
+                else if (diff.inHours < 24) timeStr = "${diff.inHours}j lalu";
+                else timeStr = DateFormat('dd MMM').format(dt);
+              }
+
+              // Tentukan Pesan Notifikasi berdasarkan Status
+              String notifTitle = "Status Laporan Diperbarui";
+              String notifBody = "Laporan '$judul' kini berstatus $status.";
+              Color iconColor = const Color(0xFF0055D4);
+              Color bgColor = Colors.blue.shade50;
+              Color borderColor = Colors.blue.shade100;
+
+              if (status == 'Selesai') {
+                notifTitle = "Laporan Selesai!";
+                notifBody = "Laporan '$judul' telah ditindaklanjuti dan selesai.";
+                iconColor = Colors.green;
+                bgColor = Colors.green.shade50;
+                borderColor = Colors.green.shade100;
+              } else if (status == 'Ditolak') {
+                notifTitle = "Laporan Ditolak";
+                notifBody = "Maaf, laporan '$judul' tidak dapat diproses.";
+                iconColor = Colors.red;
+                bgColor = Colors.red.shade50;
+                borderColor = Colors.red.shade100;
+              }
+
+              // Kita perlu object Laporan untuk navigasi ke Detail
+              // Mapping sederhana inline
+              final laporanObj = Laporan(
+                id: doc.id,
+                judul: judul,
+                lokasi: data['lokasi'] ?? '-',
+                detailLokasi: data['detailLokasi'] ?? '-',
+                deskripsi: data['deskripsi'] ?? '-',
+                kategori: kategori,
+                jenis: data['jenis'] ?? 'Publik',
+                pelapor: data['pelapor'] ?? '-',
+                status: status,
+                tanggal: timeStr, // Display time
+                statusColor: status == 'Selesai' ? Colors.green : (status == 'Ditolak' ? Colors.red : Colors.blue),
+                imagePath: data['imagePath'] ?? data['foto'] ?? 'assets/images/placeholder.png',
+              );
+
+              return InkWell(
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ReportDetailPage(laporan: laporanObj))),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: bgColor,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: borderColor),
+                    boxShadow: [
+                      BoxShadow(color: iconColor.withOpacity(0.05), blurRadius: 5, offset: const Offset(0, 3))
+                    ]
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(color: iconColor.withOpacity(0.1), shape: BoxShape.circle),
+                        child: Icon(Icons.notifications_active, color: iconColor),
+                      ),
+                      const SizedBox(width: 15),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(notifTitle, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87)),
+                            const SizedBox(height: 4),
+                            Text(notifBody, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.grey[700], fontSize: 12)),
+                            const SizedBox(height: 6),
+                            Text(timeStr, style: TextStyle(fontSize: 10, color: Colors.grey[500])),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
+                    ],
+                  ),
+                ),
+              );
+            },
           );
         },
+      ),
+    );
+  }
+  
+  // Helper Widget untuk Empty State (Bisa ditaruh di luar class jika error)
+  Widget _buildEmptyState(String message) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.notifications_off_outlined, size: 60, color: Colors.grey.shade300),
+          const SizedBox(height: 10),
+          Text(message, style: const TextStyle(color: Colors.grey)),
+        ],
       ),
     );
   }

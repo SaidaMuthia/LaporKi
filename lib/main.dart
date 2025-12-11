@@ -56,7 +56,7 @@ class MyApp extends StatelessWidget {
         '/login': (context) => LoginPage(),
         '/register': (context) => RegisterPage(),
         '/dashboard': (context) => UserDashboard(),
-        '/report_permission': (context) => LocationPermissionPage(),
+        // '/report_permission': (context) => LocationPermissionPage(),
         '/admin': (context) => const AdminDashboard(),
       },
     );
