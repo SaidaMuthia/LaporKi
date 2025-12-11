@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
-// Import Riwayat Tindak Lanjut Screen
+import 'package:cloud_firestore/cloud_firestore.dart'; // Import Firestore
 import 'riwayat_tindak_lanjut_screen.dart';
-// Import Layar Gambar Penuh (Opsional, asumsikan namanya: LihatGambarScreen)
 import 'lihat_gambar_screen.dart'; 
 import 'laporan_model.dart';
-
-// Model Laporan (Gunakan model yang sama dari laporan_admin_screen.dart)
 
 class DetailLaporanScreen extends StatefulWidget {
   final Laporan laporan;
@@ -16,18 +13,18 @@ class DetailLaporanScreen extends StatefulWidget {
 }
 
 class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
-  // State untuk mengelola Status dan Catatan Tindak Lanjut
   String? _selectedStatus;
   final TextEditingController _catatanController = TextEditingController();
+  bool _isLoading = false; // Untuk loading saat simpan
 
-  // Opsi Status
-  final List<String> _statusOptions = ['Menunggu', 'Sedang Diproses', 'Selesai', 'Ditolak'];
+  // Status opsi (Pastikan stringnya sama persis dengan yang dipakai di filter)
+  final List<String> _statusOptions = ['Menunggu', 'Diproses', 'Selesai', 'Ditolak'];
 
   @override
   void initState() {
     super.initState();
-    // Inisialisasi status awal (misalnya dari data laporan jika sudah ada status)
-    _selectedStatus = 'Menunggu'; 
+    // Set status awal sesuai data laporan
+    _selectedStatus = widget.laporan.status; 
   }
 
   @override
@@ -36,34 +33,15 @@ class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
     super.dispose();
   }
 
-  // Fungsi untuk navigasi ke riwayat
   void _goToHistory() {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => const RiwayatTindakLanjutScreen(),
+        builder: (context) => RiwayatTindakLanjutScreen(laporan: widget.laporan),
       ),
     );
   }
 
-  // Fungsi untuk menyimpan tindak lanjut
-  void _saveTindakLanjut() {
-    final statusBaru = _selectedStatus;
-    final catatan = _catatanController.text;
-
-    debugPrint('Status Baru: $statusBaru');
-    debugPrint('Catatan: $catatan');
-
-    // Tambahkan logika API call/penyimpanan data di sini
-    
-    // Tampilkan feedback sukses
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Tindak Lanjut berhasil disimpan!')),
-    );
-    Navigator.pop(context, (route) => MaterialPageRoute(builder: (context) => const RiwayatTindakLanjutScreen()));
-  }
-  
-  // Fungsi untuk menampilkan gambar penuh
   void _viewFullImage() {
     Navigator.push(
       context,
@@ -73,32 +51,61 @@ class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
     );
   }
 
-  // Helper: Widget untuk Detail Info (Lokasi, Deskripsi, Kategori, Jenis)
+  // --- LOGIKA UTAMA SINKRONISASI ---
+  Future<void> _saveTindakLanjut() async {
+    setState(() => _isLoading = true);
+
+    try {
+      // 1. UPDATE Status Laporan di Database Utama
+      await FirebaseFirestore.instance.collection('laporan').doc(widget.laporan.id).update({
+        'status': _selectedStatus,
+        'catatan_terakhir': _catatanController.text, // Menyimpan catatan admin (opsional)
+        // Kita tidak mengubah 'createdAt', agar urutan tidak berantakan
+      });
+
+      // 2. BUAT NOTIFIKASI UNTUK USER
+      // Kita buat koleksi baru bernama 'notifications'
+      await FirebaseFirestore.instance.collection('notifications').add({
+        'to_user': widget.laporan.pelapor, // Email/ID user pemilik laporan
+        'title': 'Status Laporan Diperbarui',
+        'body': 'Laporan "${widget.laporan.judul}" statusnya berubah menjadi $_selectedStatus.',
+        'laporan_id': widget.laporan.id,
+        'is_read': false,
+        'createdAt': FieldValue.serverTimestamp(),
+        'type': 'status_update',
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Status berhasil diperbarui & Notifikasi dikirim ke User!')),
+        );
+        Navigator.pop(context); // Kembali ke list
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal menyimpan: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+  
+  // Helper Widget Detail Info
   Widget _buildDetailInfo(String title, String content, {bool isLocked = true}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 20.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.bold),
-          ),
+          Text(title, style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Text(
-                  content,
-                  style: const TextStyle(fontSize: 16, color: Colors.black87),
-                ),
-              ),
-              if (isLocked) 
-                const Padding(
-                  padding: EdgeInsets.only(left: 8.0),
-                  child: Icon(Icons.lock_outline, size: 20, color: Colors.grey),
-                ),
+              Expanded(child: Text(content, style: const TextStyle(fontSize: 16, color: Colors.black87))),
+              if (isLocked) const Padding(padding: EdgeInsets.only(left: 8.0), child: Icon(Icons.lock_outline, size: 20, color: Colors.grey)),
             ],
           ),
         ],
@@ -106,44 +113,37 @@ class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     final laporan = widget.laporan;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Lihat Laporan'),
-        // Tanggal di sebelah kanan App Bar (Detail Laporan.png)
+        title: const Text('Detail Laporan'),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: Center(
-              child: Text(
-                laporan.tanggal, // Ganti dengan format tanggal yang sesuai
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
-              ),
+              child: Text(laporan.tanggal, style: TextStyle(fontSize: 14, color: Colors.grey.shade700)),
             ),
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 100), // Padding untuk tombol Simpan
+        padding: const EdgeInsets.only(bottom: 100),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Gambar Laporan
             GestureDetector(
-              onTap: _viewFullImage, // Navigasi ke layar gambar penuh
+              onTap: _viewFullImage,
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  Image.asset(
-                    laporan.imagePath, // Ganti dengan NetworkImage jika dari internet
-                    width: double.infinity,
-                    height: 250,
-                    fit: BoxFit.cover,
-                  ),
+                  // Cek apakah URL atau Asset
+                  laporan.imagePath.startsWith('http')
+                      ? Image.network(laporan.imagePath, width: double.infinity, height: 250, fit: BoxFit.cover)
+                      : Image.asset(laporan.imagePath, width: double.infinity, height: 250, fit: BoxFit.cover),
                   const Icon(Icons.zoom_out_map, size: 50, color: Colors.white70),
                 ],
               ),
@@ -157,23 +157,18 @@ class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
                   const Text('DETAIL LAPORAN', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                   const Divider(height: 30),
 
-                  // Informasi Laporan
                   _buildDetailInfo('Lokasi Laporan', laporan.lokasi),
                   _buildDetailInfo('Detail Lokasi', laporan.detailLokasi),
                   _buildDetailInfo('Deskripsi Laporan', laporan.deskripsi),
                   _buildDetailInfo('Kategori Laporan', laporan.kategori),
                   _buildDetailInfo('Jenis Laporan', laporan.jenis),
                   
-                  // --- Bagian Tindak Lanjut ---
                   const SizedBox(height: 10),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text('TINDAK LANJUT', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                      TextButton(
-                        onPressed: _goToHistory, // Navigasi ke Riwayat Tindak Lanjut
-                        child: const Text('Lihat Riwayat'),
-                      ),
+                      TextButton(onPressed: _goToHistory, child: const Text('Lihat Riwayat')),
                     ],
                   ),
                   
@@ -185,7 +180,7 @@ class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     ),
-                    initialValue: _selectedStatus,
+                    value: _selectedStatus, // Menggunakan value, bukan initialValue agar reaktif
                     hint: const Text('Pilih Status'),
                     items: _statusOptions.map((String status) {
                       return DropdownMenuItem<String>(
@@ -200,15 +195,14 @@ class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
                     },
                   ),
 
-                  // Catatan (Text Field)
                   const SizedBox(height: 20),
-                  const Text('Catatan', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                  const Text('Catatan Admin', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _catatanController,
                     maxLines: 4,
                     decoration: InputDecoration(
-                      hintText: 'Tambahkan informasi tindak lanjut, langkah yang diambil, atau kendala.',
+                      hintText: 'Tambahkan catatan untuk user (misal: "Tim sudah meluncur ke lokasi")',
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                       contentPadding: const EdgeInsets.all(12),
                     ),
@@ -223,14 +217,17 @@ class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
       bottomSheet: Container(
         padding: const EdgeInsets.all(16.0),
         width: double.infinity,
+        decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 5, offset: const Offset(0, -2))]),
         child: ElevatedButton(
-          onPressed: _saveTindakLanjut,
+          onPressed: _isLoading ? null : _saveTindakLanjut,
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.blue.shade700,
+            backgroundColor: const Color(0xFF0055D4),
             padding: const EdgeInsets.symmetric(vertical: 15),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
-          child: const Text('Simpan', style: TextStyle(fontSize: 18, color: Colors.white)),
+          child: _isLoading 
+            ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+            : const Text('Simpan & Update Status', style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)),
         ),
       ),
     );
