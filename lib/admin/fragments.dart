@@ -156,7 +156,7 @@ class _LaporanAdminPageState extends State<LaporanAdminPage> {
             labelStyle: TextStyle(fontWeight: FontWeight.bold),
             tabs: [
               Tab(text: "Semua"),
-              Tab(text: "Baru"),
+              Tab(text: "Menunggu"),
               Tab(text: "Diproses"),
               Tab(text: "Selesai"),
             ],
@@ -167,7 +167,7 @@ class _LaporanAdminPageState extends State<LaporanAdminPage> {
             TabBarView(
               children: [
                 _LaporanListStream(filterStatus: null, searchQuery: _searchQuery),
-                _LaporanListStream(filterStatus: 'Baru', searchQuery: _searchQuery),
+                _LaporanListStream(filterStatus: 'Menunggu', searchQuery: _searchQuery),
                 _LaporanListStream(filterStatus: 'Diproses', searchQuery: _searchQuery),
                 _LaporanListStream(filterStatus: 'Selesai', searchQuery: _searchQuery),
               ],
@@ -273,7 +273,7 @@ class NotificationFragment extends StatelessWidget {
         // Kita hanya filter status 'Baru', lalu sort manual di bawah.
         stream: FirebaseFirestore.instance
             .collection('laporan')
-            .where('status', isEqualTo: 'Baru') 
+            .where('status', isEqualTo: 'Menunggu') 
             .snapshots(),
         builder: (context, snapshot) {
           // Handle Loading
@@ -503,7 +503,7 @@ class SummaryCard extends StatelessWidget {
   const SummaryCard({super.key, required this.laporanList});
   @override
   Widget build(BuildContext context) {
-    int baru = laporanList.where((l) => l.status == 'Baru').length;
+    int menunggu = laporanList.where((l) => l.status == 'Menunggu').length;
     int diproses = laporanList.where((l) => l.status == 'Diproses').length;
     int selesai = laporanList.where((l) => l.status == 'Selesai').length;
     int ditolak = laporanList.where((l) => l.status == 'Ditolak').length;
@@ -515,7 +515,7 @@ class SummaryCard extends StatelessWidget {
         const Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.description, color: Colors.white, size: 28), SizedBox(width: 8), Text('Rangkuman', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold))]),
         const SizedBox(height: 20),
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Flexible(child: SummaryItem(count: baru, label: 'Baru', iconColor: const Color(0xFFFFCC00))),
+          Flexible(child: SummaryItem(count: menunggu, label: 'Menunggu', iconColor: const Color(0xFFFFCC00))),
           Flexible(child: SummaryItem(count: diproses, label: 'Proses', iconColor: const Color(0xFFFF9500))),
           Flexible(child: SummaryItem(count: selesai, label: 'Selesai', iconColor: Colors.green)),
           Flexible(child: SummaryItem(count: ditolak, label: 'Ditolak', iconColor: Colors.red)),
@@ -580,7 +580,7 @@ Laporan _mapToLaporan(String id, Map<String, dynamic> data) {
     kategori: data['kategori'] ?? 'Lainnya',
     jenis: data['jenis'] ?? 'Publik',
     pelapor: data['pelapor'] ?? '-',
-    status: data['status'] ?? 'Baru',
+    status: data['status'] ?? 'Menunggu',
     tanggal: formatDate(data['createdAt'] ?? data['tanggal']),
     statusColor: getStatusColor(data['status']),
     imagePath: data['imagePath'] ?? data['foto'] ?? 'assets/images/placeholder.png',
